@@ -181,6 +181,8 @@ namespace EventsCore
         {
             SpeedHandler(); updateShake(); FunctionsHandler();
             GameManager.inst.timeline.SetActive(timelineActive);
+            if (GameManager.inst.introMain != null)
+                GameManager.inst.introMain.SetActive(timelineActive);
 
             if (RTEffectsManager.inst && EventManager.inst && GameManager.inst && (GameManager.inst.gameState == GameManager.State.Playing || GameManager.inst.gameState == GameManager.State.Reversing))
             {
