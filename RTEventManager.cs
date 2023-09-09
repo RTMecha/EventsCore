@@ -11,6 +11,9 @@ using EventsCore.Functions;
 
 using RTFunctions.Functions;
 using RTFunctions.Functions.Managers;
+using RTFunctions.Functions.IO;
+
+using Ease = RTFunctions.Functions.Animation.Ease;
 
 namespace EventsCore
 {
@@ -33,6 +36,46 @@ namespace EventsCore
             }
 
             LSEffectsManager.inst.vignette.color.overrideState = true;
+
+            if (ModCompatibility.sharedFunctions.ContainsKey("EventsCoreEventOffsets"))
+            {
+                offsets = ResetOffsets();
+                ModCompatibility.sharedFunctions["EventsCoreEventOffsets"] = ResetOffsets();
+            }
+
+            events = new EventKF[][]
+            {
+                new EventKF[]
+                {
+                    updateCameraPositionX,
+                    updateCameraPositionY,
+                },
+                new EventKF[]
+                {
+                    updateCameraZoom
+                },
+                new EventKF[]
+                {
+                    updateCameraRotation
+                },
+                new EventKF[]
+                {
+                    //Shake needs to go here.
+                    updateCameraShakeX,
+                    updateCameraShakeY
+                },
+                new EventKF[]
+                {
+                    updateTheme
+                },
+                new EventKF[]
+                {
+                    updateCameraBloom,
+                    updateCameraBloomDiffusion,
+                    updateCameraBloomThreshold,
+                    updateCameraBloomAnamorphicRatio,
+                },
+            };
         }
 
         //LAYER 1:
@@ -166,6 +209,12 @@ namespace EventsCore
                 ModCompatibility.sharedFunctions["EventsCorePitchOffset"] = pitchOffset;
             }
 
+            if (!ModCompatibility.sharedFunctions.ContainsKey("EventsCoreFollowCamera"))
+                ModCompatibility.sharedFunctions.Add("EventsCoreFollowCamera", delayTracker.move && delayTracker.active);
+
+            if (ModCompatibility.sharedFunctions.ContainsKey("EventsCoreFollowCamera"))
+                ModCompatibility.sharedFunctions["EventsCoreFollowCamera"] = delayTracker.move && delayTracker.active;
+
             if (!ModCompatibility.sharedFunctions.ContainsKey("EventsCoreEventOffsets"))
             {
                 ModCompatibility.sharedFunctions.Add("EventsCoreEventOffsets", offsets);
@@ -176,6 +225,47 @@ namespace EventsCore
                 offsets = (List<List<float>>)ModCompatibility.sharedFunctions["EventsCoreEventOffsets"];
             }
         }
+
+        void Translate()
+        {
+            var allEvents = DataManager.inst.gameData.eventObjects.allEvents;
+            var time = AudioManager.inst.CurrentAudioSource.time;
+            for (int i = 0; i < allEvents.Count; i++)
+            {
+                var nextKFIndex = allEvents[i].FindIndex(x => x.eventTime > time);
+
+                if (nextKFIndex >= 0)
+                {
+                    var prevKFIndex = nextKFIndex - 1;
+                    if (prevKFIndex < 0)
+                        prevKFIndex = 0;
+
+                    var nextKF = allEvents[i][nextKFIndex];
+                    var prevKF = allEvents[i][prevKFIndex];
+                    if (events.Length > i)
+                    {
+                        for (int j = 0; j < nextKF.eventValues.Length; j++)
+                        {
+                            bool isLerper = true;
+                            if (events[i].Length > j && isLerper)
+                            {
+                                var x = Lerp(prevKF.eventValues[j], nextKF.eventValues[j], Ease.GetEaseFunction(nextKF.curveType.Name)(RTMath.InverseLerp(prevKF.eventTime, nextKF.eventTime, time)));
+
+                                events[i][j](x);
+                            }
+                            if (!isLerper)
+                            {
+                                var x = Lerp(0f, 1f, Ease.GetEaseFunction(nextKF.curveType.Name)(RTMath.InverseLerp(prevKF.eventTime, nextKF.eventTime, time)));
+
+                                events[i][j](x);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        float Lerp(float x, float y, float t) => x + (y - x) * t;
 
         void Update()
         {
@@ -255,6 +345,8 @@ namespace EventsCore
                     RTEffectsManager.inst.UpdateColorSplit(colorSplitOffset + offsets[13][0]);
                 if (!float.IsNaN(dangerIntensity))
                     RTEffectsManager.inst.UpdateDanger(dangerIntensity, dangerColor, dangerSize);
+                if (!float.IsNaN(invertAmount))
+                    RTEffectsManager.inst.UpdateInvert(invertAmount);
 
                 if (!float.IsNaN(timelineRot))
                 {
@@ -277,8 +369,8 @@ namespace EventsCore
                     LerpGradientColor2();
                 if (!float.IsNaN(bgColor))
                     LerpBGColor();
-                if (!float.IsNaN(overlayColor))
-                    LerpOverlayColor();
+                //if (!float.IsNaN(overlayColor))
+                //LerpOverlayColor();
                 if (!float.IsNaN(timelineColor))
                     LerpTimelineColor();
 
@@ -1435,27 +1527,27 @@ namespace EventsCore
                                 previousIndex = 0;
                             }
                             var previousKF = allEvents[21][previousIndex];
-                            float y = allEvents[21][i].eventValues[1];
-                            if (float.IsNaN(y))
+                            float x = allEvents[21][i].eventValues[0];
+                            if (float.IsNaN(x))
                             {
-                                y = 0f;
+                                x = 0f;
                             }
                             float previousTime = previousKF.eventTime;
                             float eventDuration = allEvents[21][i].eventTime - previousKF.eventTime;
                             if (num == 0)
                             {
-                                EventManager.inst.eventSequence.Insert(0f, DOTween.To(new DOSetter<float>(updateCameraOverlayColor), 0f, 1f, 0f).SetEase(EventManager.inst.customInstantEase));
-                                EventManager.inst.eventSequence.Insert(0f, DOTween.To(new DOSetter<float>(updateCameraOverlayAlpha), y, y, 0f).SetEase(EventManager.inst.customInstantEase));
+                                //EventManager.inst.eventSequence.Insert(0f, DOTween.To(new DOSetter<float>(updateCameraOverlayColor), 0f, 1f, 0f).SetEase(EventManager.inst.customInstantEase));
+                                EventManager.inst.eventSequence.Insert(0f, DOTween.To(new DOSetter<float>(updateCameraInvert), x, x, 0f).SetEase(EventManager.inst.customInstantEase));
                             }
                             if (num < allEvents[21].Count)
                             {
-                                EventManager.inst.eventSequence.Insert(previousTime, DOTween.To(new DOSetter<float>(updateCameraOverlayColor), 0f, 1f, eventDuration).SetEase(allEvents[21][i].curveType.Animation));
-                                EventManager.inst.eventSequence.Insert(previousTime, DOTween.To(new DOSetter<float>(updateCameraOverlayAlpha), previousKF.eventValues[1], y, eventDuration).SetEase(allEvents[21][i].curveType.Animation));
+                                //EventManager.inst.eventSequence.Insert(previousTime, DOTween.To(new DOSetter<float>(updateCameraOverlayColor), 0f, 1f, eventDuration).SetEase(allEvents[21][i].curveType.Animation));
+                                EventManager.inst.eventSequence.Insert(previousTime, DOTween.To(new DOSetter<float>(updateCameraInvert), previousKF.eventValues[0], x, eventDuration).SetEase(allEvents[21][i].curveType.Animation));
                             }
                             if (num == allEvents[21].Count - 1)
                             {
-                                EventManager.inst.eventSequence.Insert(previousTime + eventDuration, DOTween.To(new DOSetter<float>(updateCameraOverlayColor), 1f, 1f, AudioManager.inst.CurrentAudioSource.clip.length).SetEase(EventManager.inst.customInstantEase));
-                                EventManager.inst.eventSequence.Insert(previousTime + eventDuration, DOTween.To(new DOSetter<float>(updateCameraOverlayAlpha), y, y, AudioManager.inst.CurrentAudioSource.clip.length).SetEase(EventManager.inst.customInstantEase));
+                                //EventManager.inst.eventSequence.Insert(previousTime + eventDuration, DOTween.To(new DOSetter<float>(updateCameraOverlayColor), 1f, 1f, AudioManager.inst.CurrentAudioSource.clip.length).SetEase(EventManager.inst.customInstantEase));
+                                EventManager.inst.eventSequence.Insert(previousTime + eventDuration, DOTween.To(new DOSetter<float>(updateCameraInvert), x, x, AudioManager.inst.CurrentAudioSource.clip.length).SetEase(EventManager.inst.customInstantEase));
                             }
                         }
                         num++;
@@ -1750,9 +1842,9 @@ namespace EventsCore
                 #region Find Colors
 
                 if (allEvents[4].Count > 0)
-                    if (allEvents[4].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                    if (allEvents[4].Find(x => x.eventTime >= AudioManager.inst.CurrentAudioSource.time) != null)
                     {
-                        var nextKF = allEvents[4].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
+                        var nextKF = allEvents[4].Find(x => x.eventTime >= AudioManager.inst.CurrentAudioSource.time);
                         if (allEvents[4].IndexOf(nextKF) - 1 > -1)
                         {
                             if (allEvents[4][allEvents[4].IndexOf(nextKF) - 1].eventValues.Length > 0)
@@ -1793,9 +1885,9 @@ namespace EventsCore
                     }
 
                 if (allEvents[6].Count > 0)
-                    if (allEvents[6].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                    if (allEvents[6].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
                     {
-                        var nextKF = allEvents[6].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
+                        var nextKF = allEvents[6].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
                         if (allEvents[6].IndexOf(nextKF) - 1 > -1)
                         {
                             if (allEvents[6][allEvents[6].IndexOf(nextKF) - 1].eventValues.Length > 4)
@@ -1836,9 +1928,9 @@ namespace EventsCore
                     }
 
                 if (allEvents[7].Count > 0)
-                    if (allEvents[7].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                    if (allEvents[7].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
                     {
-                        var nextKF = allEvents[7].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
+                        var nextKF = allEvents[7].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
                         if (allEvents[7].IndexOf(nextKF) - 1 > -1)
                         {
                             if (allEvents[7][allEvents[7].IndexOf(nextKF) - 1].eventValues.Length > 6)
@@ -1879,9 +1971,9 @@ namespace EventsCore
                     }
 
                 if (allEvents.Count > 15 && allEvents[15].Count > 0)
-                    if (allEvents[15].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                    if (allEvents[15].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
                     {
-                        var nextKF = allEvents[15].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
+                        var nextKF = allEvents[15].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
                         if (allEvents[15].IndexOf(nextKF) - 1 > -1)
                         {
                             if (allEvents[15][allEvents[15].IndexOf(nextKF) - 1].eventValues.Length > 2)
@@ -1927,9 +2019,9 @@ namespace EventsCore
                     }
 
                 if (allEvents.Count > 20 && allEvents[20].Count > 0)
-                    if (allEvents[20].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                    if (allEvents[20].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
                     {
-                        var nextKF = allEvents[20].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
+                        var nextKF = allEvents[20].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
                         if (allEvents[20].IndexOf(nextKF) - 1 > -1)
                         {
                             prevBGColor = (int)allEvents[20][allEvents[20].IndexOf(nextKF) - 1].eventValues[0];
@@ -1953,32 +2045,32 @@ namespace EventsCore
                         nextBGColor = (int)finalKF.eventValues[0];
                     }
 
-                if (allEvents.Count > 21 && allEvents[21].Count > 0)
-                    if (allEvents[21].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
-                    {
-                        var nextKF = allEvents[21].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
-                        if (allEvents[21].IndexOf(nextKF) - 1 > -1)
-                        {
-                            prevOverlayColor = (int)allEvents[21][allEvents[21].IndexOf(nextKF) - 1].eventValues[0];
-                        }
-                        else
-                        {
-                            prevOverlayColor = (int)allEvents[21][0].eventValues[0];
-                        }
-                        nextOverlayColor = (int)nextKF.eventValues[0];
-                    }
-                    else
-                    {
-                        var finalKF = allEvents[21][allEvents[21].Count - 1];
+                //if (allEvents.Count > 21 && allEvents[21].Count > 0)
+                //    if (allEvents[21].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                //    {
+                //        var nextKF = allEvents[21].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
+                //        if (allEvents[21].IndexOf(nextKF) - 1 > -1)
+                //        {
+                //            prevOverlayColor = (int)allEvents[21][allEvents[21].IndexOf(nextKF) - 1].eventValues[0];
+                //        }
+                //        else
+                //        {
+                //            prevOverlayColor = (int)allEvents[21][0].eventValues[0];
+                //        }
+                //        nextOverlayColor = (int)nextKF.eventValues[0];
+                //    }
+                //    else
+                //    {
+                //        var finalKF = allEvents[21][allEvents[21].Count - 1];
 
-                        int a = allEvents[21].Count - 2;
-                        if (a < 0)
-                        {
-                            a = 0;
-                        }
-                        prevOverlayColor = (int)allEvents[21][a].eventValues[0];
-                        nextOverlayColor = (int)finalKF.eventValues[0];
-                    }
+                //        int a = allEvents[21].Count - 2;
+                //        if (a < 0)
+                //        {
+                //            a = 0;
+                //        }
+                //        prevOverlayColor = (int)allEvents[21][a].eventValues[0];
+                //        nextOverlayColor = (int)finalKF.eventValues[0];
+                //    }
 
                 if (allEvents.Count > 22 && allEvents[22].Count > 0)
                     if (allEvents[22].Find((DataManager.GameData.EventKeyframe x) => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
@@ -2364,52 +2456,52 @@ namespace EventsCore
             timelineActive = active && !zen || active && EventsCorePlugin.ShowGUI.Value;
         }
 
-        public void updateCameraOverlayColor(float _ov)
+        //public void updateCameraOverlayColor(float _ov)
+        //{
+        //    overlayColor = _ov;
+        //}
+
+        public void updateCameraInvert(float _alpha)
         {
-            overlayColor = _ov;
+            invertAmount = _alpha;
         }
 
-        public void updateCameraOverlayAlpha(float _alpha)
-        {
-            overlayAlpha = _alpha;
-        }
+        //public void LerpOverlayColor()
+        //{
+        //    Color previous;
+        //    Color next;
 
-        public void LerpOverlayColor()
-        {
-            Color previous;
-            Color next;
+        //    DataManager.BeatmapTheme beatmapTheme = GameManager.inst.LiveTheme;
+        //    if (EditorManager.inst != null && EventEditor.inst.showTheme)
+        //    {
+        //        beatmapTheme = EventEditor.inst.previewTheme;
+        //    }
 
-            DataManager.BeatmapTheme beatmapTheme = GameManager.inst.LiveTheme;
-            if (EditorManager.inst != null && EventEditor.inst.showTheme)
-            {
-                beatmapTheme = EventEditor.inst.previewTheme;
-            }
+        //    if (beatmapTheme.objectColors.Count > prevOverlayColor && prevOverlayColor > -1)
+        //    {
+        //        previous = beatmapTheme.objectColors[prevOverlayColor];
+        //    }
+        //    else
+        //    {
+        //        previous = Color.black;
+        //    }
+        //    if (beatmapTheme.objectColors.Count > nextOverlayColor && nextOverlayColor > -1)
+        //    {
+        //        next = beatmapTheme.objectColors[nextOverlayColor];
+        //    }
+        //    else
+        //    {
+        //        next = Color.black;
+        //    }
 
-            if (beatmapTheme.objectColors.Count > prevOverlayColor && prevOverlayColor > -1)
-            {
-                previous = beatmapTheme.objectColors[prevOverlayColor];
-            }
-            else
-            {
-                previous = Color.black;
-            }
-            if (beatmapTheme.objectColors.Count > nextOverlayColor && nextOverlayColor > -1)
-            {
-                next = beatmapTheme.objectColors[nextOverlayColor];
-            }
-            else
-            {
-                next = Color.black;
-            }
+        //    float num = overlayColor;
+        //    if (float.IsNaN(num) || num < 0f)
+        //    {
+        //        num = 0f;
+        //    }
 
-            float num = overlayColor;
-            if (float.IsNaN(num) || num < 0f)
-            {
-                num = 0f;
-            }
-
-            EventsCorePlugin.overlayColorToLerp = Color.Lerp(previous, next, num);
-        }
+        //    EventsCorePlugin.overlayColorToLerp = Color.Lerp(previous, next, num);
+        //}
 
         public void updateCameraBGColor(float _bg)
         {
@@ -2464,34 +2556,34 @@ namespace EventsCore
             camPosY = _pos;
         }
 
-        public void updateCameraPositionX(float _pos)
+        public void updateCameraPositionX(float t)
         {
-            EventManager.inst.camPos.x = _pos;
+            EventManager.inst.camPos.x = t;
         }
 
-        public void updateCameraPositionY(float _pos)
+        public void updateCameraPositionY(float t)
         {
-            EventManager.inst.camPos.y = _pos;
+            EventManager.inst.camPos.y = t;
         }
 
-        public void updateCameraZoom(float _zoom)
+        public void updateCameraZoom(float t)
         {
-            EventManager.inst.camZoom = _zoom;
+            EventManager.inst.camZoom = t;
         }
 
-        public void updateCameraRotation(float _rot)
+        public void updateCameraRotation(float t)
         {
-            EventManager.inst.camRot = _rot;
+            EventManager.inst.camRot = t;
         }
 
-        public void updateCameraChromatic(float _chroma)
+        public void updateCameraChromatic(float t)
         {
-            EventManager.inst.camChroma = _chroma;
+            EventManager.inst.camChroma = t;
         }
 
-        public void updateCameraBloom(float _bloom)
+        public void updateCameraBloom(float t)
         {
-            EventManager.inst.camBloom = _bloom;
+            EventManager.inst.camBloom = t;
         }
 
         public void updateCameraBloomDiffusion(float _diffusion)
@@ -2901,10 +2993,10 @@ namespace EventsCore
         public int prevBGColor = 18;
         public int nextBGColor = 18;
 
-        public float overlayColor;
-        public int prevOverlayColor = 18;
-        public int nextOverlayColor = 18;
-        public float overlayAlpha;
+        //public float overlayColor;
+        //public int prevOverlayColor = 18;
+        //public int nextOverlayColor = 18;
+        public float invertAmount;
 
         public float bloomColor;
         public int prevBloomColor = 18;
@@ -2961,6 +3053,112 @@ namespace EventsCore
         #endregion
 
         #region Offsets
+
+        List<List<float>> ResetOffsets()
+        {
+            return new List<List<float>>
+        {
+            new List<float>
+            {
+                0f, // Move X
+                0f, // Move Y
+            },
+            new List<float>
+            {
+                0f, // Zoom
+            },
+            new List<float>
+            {
+                0f, // Rotate
+            },
+            new List<float>
+            {
+                0f, // Shake
+            },
+            new List<float>
+            {
+                0f, // Theme
+            },
+            new List<float>
+            {
+                0f, // Chromatic
+            },
+            new List<float>
+            {
+                0f, // Bloom Intensity
+                0f, // Bloom Diffusion
+                0f, // Bloom Threshold
+                0f, // Bloom Anamorphic Ratio
+            },
+            new List<float>
+            {
+                0f, // Vignette Intensity
+                0f, // Vignette Smoothness
+                0f, // Vignette Rounded
+                0f, // Vignette Roundness
+                0f, // Vignette Center X
+                0f, // Vignette Center Y
+            },
+            new List<float>
+            {
+                0f, // Lens Intensity
+                0f, // Lens Center X
+                0f, // Lens Center Y
+                0f, // Lens Intensity X
+                0f, // Lens Intensity Y
+                0f, // Lens Scale
+            },
+            new List<float>
+            {
+                0f, // Grain Intensity
+                0f, // Grain Colored
+                0f, // Grain Size
+            },
+            new List<float>
+            {
+                0f, // ColorGrading Hueshift
+                0f, // ColorGrading Contrast
+                0f, // ColorGrading Gamma X
+                0f, // ColorGrading Gamma Y
+                0f, // ColorGrading Gamma Z
+                0f, // ColorGrading Gamma W
+                0f, // ColorGrading Saturation
+                0f, // ColorGrading Temperature
+                0f, // ColorGrading Tint
+            },
+            new List<float>
+            {
+                0f, // Ripples Strength
+                0f, // Ripples Speed
+                0f, // Ripples Distance
+                0f, // Ripples Height
+                0f, // Ripples Width
+            },
+            new List<float>
+            {
+                0f, // RadialBlur Intensity
+                0f, // RadialBlur Iterations
+            },
+            new List<float>
+            {
+                0f, // ColorSplit Offset
+            },
+            new List<float>
+            {
+                0f, // Camera Offset X
+                0f, // Camera Offset Y
+            },
+            new List<float>
+            {
+                0f, // Gradient Intensity
+                0f, // Gradient Rotation
+            },
+            new List<float>
+            {
+                0f, // DoubleVision Intensity
+            },
+        };
+        }
 
         List<List<float>> offsets = new List<List<float>>
         {
@@ -3212,6 +3410,14 @@ namespace EventsCore
 
         //    public Sequence sequence;
         //}
+
+        #endregion
+
+        #region Delegates
+
+        public delegate void EventKF(float t);
+
+        public EventKF[][] events;
 
         #endregion
     }
