@@ -4,7 +4,7 @@
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>EventsCore</AssemblyName>
     <Description>Adds new post processing effects to the game's internals for other mods to use.</Description>
-    <Version>1.4.2</Version>
+    <Version>1.4.3</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
