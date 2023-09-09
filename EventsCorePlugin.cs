@@ -25,13 +25,14 @@ using RTFunctions.Functions.Managers;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.4.2")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.4.3")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
 	{
+		public static EventsCorePlugin inst;
 		public static string className = "[<color=#FFFFFF>EventsCore</color>] " + PluginInfo.PLUGIN_VERSION + "\n";
-		public static ConfigEntry<bool> SetCanvas { get; set; }
+		readonly Harmony harmony = new Harmony("EventsCore");
 
 		public static ConfigEntry<bool> AllowCameraEvent { get; set; }
 		public static ConfigEntry<float> EditorSpeed { get; set; }
@@ -44,9 +45,10 @@ namespace EventsCore
 
 		void Awake()
 		{
+			inst = this;
+
 			Logger.LogInfo($"Plugin Events Core is loaded!");
 
-			SetCanvas = Config.Bind("Optimization", "Show Overlay in Editor", false, "If you want to show the overlay in the editor, turn this on. Do note this will cause some issues with selecting UI elements on editor startup.");
 			AllowCameraEvent = Config.Bind("Camera", "Editor Camera Offset", false, "Enabling this will disable all regular Camera events (move, zoom, etc) and allow you to move the camera around freely. WASD to move, + and - to zoom and numpad 4 / numpad 6 to rotate.");
 			EditorSpeed = Config.Bind("Camera", "Editor Camera Speed", 1f, "How fast the editor camera moves");
 			EditorCamToggle = Config.Bind("Camera", "Editor Camera Toggle Key", KeyCode.F2, "Press this key to toggle the Editor Camera on or off.");
@@ -69,30 +71,9 @@ namespace EventsCore
 
 			if (Input.GetKeyDown(ShowGUIToggle.Value) && !LSHelpers.IsUsingInputField())
 				ShowGUI.Value = !ShowGUI.Value;
-
-			if (EditorManager.inst != null && overlay != null)
-			{
-				canvas.gameObject.SetActive(EditorManager.inst.hasLoadedLevel);
-
-				if (EditorManager.inst.isEditing)
-				{
-					if (canvas != null && SetCanvas.Value)
-					{
-						overlay.transform.SetParent(canvas);
-					}
-					if (canvas != null && !SetCanvas.Value)
-					{
-						overlay.transform.SetParent(GameManager.inst.playerGUI.transform);
-					}
-				}
-				else
-				{
-					overlay.transform.SetParent(GameManager.inst.playerGUI.transform);
-				}
-			}
 		}
 
-		private static void UpdateSettings(object sender, EventArgs e)
+		static void UpdateSettings(object sender, EventArgs e)
         {
 			if (ModCompatibility.sharedFunctions.ContainsKey("EventsCoreEditorOffset"))
 				ModCompatibility.sharedFunctions["EventsCoreEditorOffset"] = AllowCameraEvent.Value;
@@ -108,11 +89,9 @@ namespace EventsCore
 			}
         }
 
-		public static Harmony harmony = new Harmony("EventsCore");
-
 		[HarmonyPatch(typeof(AudioManager), "Update")]
 		[HarmonyPrefix]
-		private static bool AudioUpdatePrefix(AudioManager __instance)
+		static bool AudioUpdatePrefix(AudioManager __instance)
         {
 			float masterVol = (float)DataManager.inst.GetSettingInt("MasterVolume", 9) / 9f;
 
@@ -133,7 +112,7 @@ namespace EventsCore
 
 		[HarmonyPatch(typeof(AudioManager), "SetPitch")]
 		[HarmonyPrefix]
-		private static bool SetPitchPrefix(AudioManager __instance, float __0)
+		static bool SetPitchPrefix(AudioManager __instance, float __0)
 		{
 			Debug.LogFormat("{0}Set Pitch : {1}", className, __0);
 			if (RTEventManager.inst != null)
@@ -148,7 +127,7 @@ namespace EventsCore
 
 		[HarmonyPatch(typeof(GameManager), "Awake")]
 		[HarmonyPrefix]
-		private static void AddRTEffectsManager()
+		static void AddRTEffectsManager()
 		{
 			if (!GameObject.Find("Game Systems/EffectsManager").GetComponent<RTEffectsManager>())
 			{
@@ -172,14 +151,21 @@ namespace EventsCore
 
 		[HarmonyPatch(typeof(EventManager), "Update")]
 		[HarmonyPrefix]
-		private static bool EventManagerUpdatePrefix()
+		static bool EventManagerUpdatePrefix()
+        {
+			return false;
+        }
+		
+		[HarmonyPatch(typeof(EventManager), "LateUpdate")]
+		[HarmonyPrefix]
+		static bool EventManagerLateUpdatePrefix()
         {
 			return false;
         }
 
 		[HarmonyPatch(typeof(EventManager), "updateTheme")]
 		[HarmonyPrefix]
-		private static bool EventManagerThemePrefix(float __0)
+		static bool EventManagerThemePrefix(float __0)
         {
 			RTEventManager.inst.updateTheme(__0);
 			return false;
@@ -219,23 +205,6 @@ namespace EventsCore
         {
 			SetTypes();
 			perspectiveCam = __instance.CameraPerspective.GetComponent<Camera>();
-			overlay = new GameObject("Overlay");
-			if (EditorManager.inst != null)
-			{
-				canvas = CreateCanvas().transform;
-				overlay.transform.SetParent(canvas);
-			}
-			else
-            {
-				overlay.transform.SetParent(__instance.playerGUI.transform);
-            }
-
-			var rt = overlay.AddComponent<RectTransform>();
-			rt.anchoredPosition = Vector2.zero;
-			rt.sizeDelta = new Vector2(10000f, 10000f);
-
-			overlay.AddComponent<CanvasRenderer>();
-			overlayRenderer = overlay.AddComponent<Image>();
 		}
 
 		public static System.Type modifiers;
@@ -249,28 +218,17 @@ namespace EventsCore
 				catalyst = GameObject.Find("BepInEx_Manager").GetComponentByName("CatalystBase").GetType();
 		}
 
-		public static Transform canvas;
-		public static Image overlayRenderer;
-		public static GameObject overlay;
 		public static Camera perspectiveCam;
-
-		[HarmonyPatch(typeof(GameManager), "EndOfLevel")]
-		[HarmonyPrefix]
-		private static void EndOfLevelPrefix()
-        {
-			overlay.SetActive(false);
-        }
 
 		[HarmonyPatch(typeof(GameManager), "UpdateTheme")]
 		[HarmonyPrefix]
-		private static bool UpdateThemePrefix(GameManager __instance)
+		static bool UpdateThemePrefix(GameManager __instance)
 		{
 			DataManager.BeatmapTheme beatmapTheme = __instance.LiveTheme;
 			if (EditorManager.inst != null && EventEditor.inst.showTheme)
 			{
 				beatmapTheme = EventEditor.inst.previewTheme;
 			}
-			overlayRenderer.color = LSColors.fadeColor(overlayColorToLerp, RTEventManager.inst.overlayAlpha);
 			perspectiveCam.backgroundColor = bgColorToLerp;
 			Image[] componentsInChildren = __instance.timeline.GetComponentsInChildren<Image>();
 			for (int i = 0; i < componentsInChildren.Length; i++)
@@ -321,89 +279,89 @@ namespace EventsCore
 				//Change this to InvertColorHue(InvertColorValue(bgColorToLerp));
 				componentsInChildren2[i].color = EventExtensions.InvertColorHue(EventExtensions.InvertColorValue(bgColorToLerp));
 			}
-			for (int j = 0; j < DataManager.inst.gameData.beatmapObjects.Count; j++)
-			{
-				if (ObjectManager.inst.beatmapGameObjects.ContainsKey(DataManager.inst.gameData.beatmapObjects[j].id))
-				{
-					ObjectManager.GameObjectRef gameObjectRef = ObjectManager.inst.beatmapGameObjects[DataManager.inst.gameData.beatmapObjects[j].id];
-					if (gameObjectRef.obj != null && gameObjectRef.rend != null && gameObjectRef.rend.enabled && modifiers == null)
-					{
-						Color color = Color.Lerp(beatmapTheme.GetObjColor(gameObjectRef.sequence.LastColor), beatmapTheme.GetObjColor(gameObjectRef.sequence.NewColor), gameObjectRef.sequence.ColorValue);
-						if (DataManager.inst.gameData.beatmapObjects[j].objectType == DataManager.GameData.BeatmapObject.ObjectType.Helper)
-						{
-							color = LSColors.fadeColor(color, 0.35f);
-						}
-						if (gameObjectRef.obj.GetComponentInChildren<TextMeshPro>())
-						{
-							gameObjectRef.obj.GetComponentInChildren<TextMeshPro>().color = color;
-						}
-						if (gameObjectRef.obj.GetComponentInChildren<SpriteRenderer>())
-						{
-							gameObjectRef.obj.GetComponentInChildren<SpriteRenderer>().material.color = color;
-						}
-						else
-						{
-							if (gameObjectRef.mat.HasProperty("_Color"))
-							{
-								if (!showOnlyOnLayer)
-								{
-									if (highlightObjects && EditorManager.inst != null && EditorManager.inst.isEditing)
-                                    {
-										var list = new List<Transform>();
+			//for (int j = 0; j < DataManager.inst.gameData.beatmapObjects.Count; j++)
+			//{
+			//	if (ObjectManager.inst.beatmapGameObjects.ContainsKey(DataManager.inst.gameData.beatmapObjects[j].id))
+			//	{
+			//		ObjectManager.GameObjectRef gameObjectRef = ObjectManager.inst.beatmapGameObjects[DataManager.inst.gameData.beatmapObjects[j].id];
+			//		if (gameObjectRef.obj != null && gameObjectRef.rend != null && gameObjectRef.rend.enabled && modifiers == null)
+			//		{
+			//			Color color = Color.Lerp(beatmapTheme.GetObjColor(gameObjectRef.sequence.LastColor), beatmapTheme.GetObjColor(gameObjectRef.sequence.NewColor), gameObjectRef.sequence.ColorValue);
+			//			if (DataManager.inst.gameData.beatmapObjects[j].objectType == DataManager.GameData.BeatmapObject.ObjectType.Helper)
+			//			{
+			//				color = LSColors.fadeColor(color, 0.35f);
+			//			}
+			//			if (gameObjectRef.obj.GetComponentInChildren<TextMeshPro>())
+			//			{
+			//				gameObjectRef.obj.GetComponentInChildren<TextMeshPro>().color = color;
+			//			}
+			//			if (gameObjectRef.obj.GetComponentInChildren<SpriteRenderer>())
+			//			{
+			//				gameObjectRef.obj.GetComponentInChildren<SpriteRenderer>().material.color = color;
+			//			}
+			//			else
+			//			{
+			//				if (gameObjectRef.mat.HasProperty("_Color"))
+			//				{
+			//					if (!showOnlyOnLayer)
+			//					{
+			//						if (highlightObjects && EditorManager.inst != null && EditorManager.inst.isEditing)
+   //                                 {
+			//							var list = new List<Transform>();
 
-										var tf = gameObjectRef.obj.transform;
-										list.Add(tf);
+			//							var tf = gameObjectRef.obj.transform;
+			//							list.Add(tf);
 
-										while (tf.childCount != 0 && tf.GetChild(0) != null)
-										{
-											tf = tf.GetChild(0);
-											list.Add(tf);
-										}
+			//							while (tf.childCount != 0 && tf.GetChild(0) != null)
+			//							{
+			//								tf = tf.GetChild(0);
+			//								list.Add(tf);
+			//							}
 
-										var rt = list[list.Count - 1].gameObject.GetComponentByName("RTObject");
-										var b = (bool)rt.GetType().GetField("selected", BindingFlags.Public | BindingFlags.Instance).GetValue(rt);
+			//							var rt = list[list.Count - 1].gameObject.GetComponentByName("RTObject");
+			//							var b = (bool)rt.GetType().GetField("selected", BindingFlags.Public | BindingFlags.Instance).GetValue(rt);
 
-										if (b)
-                                        {
-											if (Input.GetKey(KeyCode.LeftShift))
-											{
-												Color colorHover = new Color(highlightObjectsDoubleColor.r, highlightObjectsDoubleColor.g, highlightObjectsDoubleColor.b);
+			//							if (b)
+   //                                     {
+			//								if (Input.GetKey(KeyCode.LeftShift))
+			//								{
+			//									Color colorHover = new Color(highlightObjectsDoubleColor.r, highlightObjectsDoubleColor.g, highlightObjectsDoubleColor.b);
 
-												if (color.r > 0.9f && color.g > 0.9f && color.b > 0.9f)
-												{
-													colorHover = new Color(-highlightObjectsDoubleColor.r, -highlightObjectsDoubleColor.g, -highlightObjectsDoubleColor.b);
-												}
+			//									if (color.r > 0.9f && color.g > 0.9f && color.b > 0.9f)
+			//									{
+			//										colorHover = new Color(-highlightObjectsDoubleColor.r, -highlightObjectsDoubleColor.g, -highlightObjectsDoubleColor.b);
+			//									}
 
-												gameObjectRef.mat.color = color + new Color(colorHover.r, colorHover.g, colorHover.b, 0f);
-											}
-											else
-											{
-												Color colorHover = new Color(highlightObjectsColor.r, highlightObjectsColor.g, highlightObjectsColor.b);
+			//									gameObjectRef.mat.color = color + new Color(colorHover.r, colorHover.g, colorHover.b, 0f);
+			//								}
+			//								else
+			//								{
+			//									Color colorHover = new Color(highlightObjectsColor.r, highlightObjectsColor.g, highlightObjectsColor.b);
 
-												if (color.r > 0.95f && color.g > 0.95f && color.b > 0.95f)
-												{
-													colorHover = new Color(-highlightObjectsColor.r, -highlightObjectsColor.g, -highlightObjectsColor.b);
-												}
+			//									if (color.r > 0.95f && color.g > 0.95f && color.b > 0.95f)
+			//									{
+			//										colorHover = new Color(-highlightObjectsColor.r, -highlightObjectsColor.g, -highlightObjectsColor.b);
+			//									}
 
-												gameObjectRef.mat.color = color + new Color(colorHover.r, colorHover.g, colorHover.b, 0f);
-											}
-										}
-									}
-									else
-										gameObjectRef.mat.color = color;
-								}
-								else if (EditorManager.inst != null)
-								{
-									if (DataManager.inst.gameData.beatmapObjects[j].editorData.Layer != EditorManager.inst.layer)
-									{
-										gameObjectRef.mat.color = LSColors.fadeColor(color, color.a * layerOpacityOffset);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+			//									gameObjectRef.mat.color = color + new Color(colorHover.r, colorHover.g, colorHover.b, 0f);
+			//								}
+			//							}
+			//						}
+			//						else
+			//							gameObjectRef.mat.color = color;
+			//					}
+			//					else if (EditorManager.inst != null)
+			//					{
+			//						if (DataManager.inst.gameData.beatmapObjects[j].editorData.Layer != EditorManager.inst.layer)
+			//						{
+			//							gameObjectRef.mat.color = LSColors.fadeColor(color, color.a * layerOpacityOffset);
+			//						}
+			//					}
+			//				}
+			//			}
+			//		}
+			//	}
+			//}
 			for (int k = 0; k < BackgroundManager.inst.backgroundObjects.Count; k++)
 			{
 				var backgroundObject = DataManager.inst.gameData.backgroundObjects[k];
@@ -419,16 +377,19 @@ namespace EventsCore
 						int num3 = num2 - backgroundObject.layer;
 						float t = color2.a / (float)num3 * (float)l;
 						Color b = beatmapTheme.backgroundColors[0];
-						if (ColorMatch(b, beatmapTheme.backgroundColor, 0.01f))
+
+						var comp = gameObject.transform.GetChild(l - 1).GetComponent<Renderer>();
+
+						if (ColorMatch(b, beatmapTheme.backgroundColor, 0.05f))
 						{
 							b = bgColorToLerp;
 							b.a = 1f;
-							gameObject.transform.GetChild(l - 1).GetComponent<Renderer>().material.color = Color.Lerp(Color.Lerp(color2, b, t), b, t);
+							comp.material.color = Color.Lerp(Color.Lerp(color2, b, t), b, t);
 						}
 						else
 						{
 							b.a = 1f;
-							gameObject.transform.GetChild(l - 1).GetComponent<Renderer>().material.color = Color.Lerp(Color.Lerp(color2, b, t), b, t);
+							comp.material.color = Color.Lerp(Color.Lerp(color2, b, t), b, t);
 						}
 					}
 				}
@@ -437,7 +398,6 @@ namespace EventsCore
 		}
 
 		public static Color bgColorToLerp;
-		public static Color overlayColorToLerp;
 		public static Color timelineColorToLerp;
 
 		public static void SetShowable(bool _show, float _opacity, bool _highlightObjects, Color _highlightObjectsColor, Color _highlightObjectsDoubleColor)
