@@ -25,7 +25,7 @@ using RTFunctions.Functions.Managers;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.4.3")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.5.0")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
@@ -43,6 +43,8 @@ namespace EventsCore
 
 		public static ConfigEntry<KeyCode> ShowGUIToggle { get; set; }
 
+		public static ConfigEntry<bool> ShowIntro { get; set; }
+
 		void Awake()
 		{
 			inst = this;
@@ -55,6 +57,8 @@ namespace EventsCore
 
 			ShowGUI = Config.Bind("Game", "Players & GUI Active", true, "Sets the players and GUI elements active / inactive.");
 			ShowGUIToggle = Config.Bind("Game", "Players & GUI Toggle Key", KeyCode.F9, "Press this key to toggle the players / GUI on or off.");
+
+			ShowIntro = Config.Bind("Game", "Show Intro", true, "Sets whether the Intro GUI is active / inactive.");
 
 			Config.SettingChanged += new EventHandler<SettingChangedEventArgs>(UpdateSettings);
 
@@ -167,7 +171,7 @@ namespace EventsCore
 		[HarmonyPrefix]
 		static bool EventManagerThemePrefix(float __0)
         {
-			RTEventManager.inst.updateTheme(__0);
+			RTEventManager.updateTheme(__0);
 			return false;
         }
 
@@ -179,22 +183,19 @@ namespace EventsCore
 			return false;
         }
 
-		//[HarmonyPatch(typeof(EventManager), "updateEvents", new[] { typeof(int) })]
-		//[HarmonyPrefix]
-		private static bool EventManagerUpdateEventsPrefix1(int __0)
+		[HarmonyPatch(typeof(EventManager), "updateEvents", new[] { typeof(int) })]
+		[HarmonyPrefix]
+		static bool EventManagerUpdateEventsPrefix1(int __0)
         {
 			RTEventManager.inst.updateEvents(__0);
 			return false;
         }
 
-		//[HarmonyPatch(typeof(EventManager), "updateEvents", new System.Type[] { })]
-		//[HarmonyPrefix]
-		private static bool EventManagerUpdateEventsPrefix2()
+		[HarmonyPatch(typeof(EventManager), "updateEvents", new Type[] { })]
+		[HarmonyPrefix]
+		static bool EventManagerUpdateEventsPrefix2(EventManager __instance)
         {
-			for (int i = 0; i < DataManager.inst.gameData.eventObjects.allEvents.Count; i++)
-            {
-				RTEventManager.inst.updateEvents(i);
-            }
+			__instance.StartCoroutine(RTEventManager.inst.updateEvents());
 
 			return false;
         }
