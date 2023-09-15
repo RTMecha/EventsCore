@@ -1,19 +1,27 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using DG.Tweening;
-using DG.Tweening.Core;
+
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 using LSFunctions;
 
+using DG.Tweening;
+using DG.Tweening.Core;
+
 using EventsCore.Functions;
 
 using RTFunctions.Functions;
 using RTFunctions.Functions.Managers;
+using RTFunctions.Functions.Animation;
+using RTFunctions.Functions.Animation.Keyframe;
 using RTFunctions.Functions.IO;
 
+using DOSequence = DG.Tweening.Sequence;
 using Ease = RTFunctions.Functions.Animation.Ease;
+using EaseFunction = RTFunctions.Functions.Animation.EaseFunction;
+using Random = UnityEngine.Random;
 
 namespace EventsCore
 {
@@ -190,6 +198,10 @@ namespace EventsCore
         {
             var allEvents = DataManager.inst.gameData.eventObjects.allEvents;
             var time = AudioManager.inst.CurrentAudioSource.time;
+
+            if (shakeSequence != null && shakeSequence.keyframes != null && shakeSequence.keyframes.Length > 0 && EventsCorePlugin.ShakeEventMode.Value == EventsCorePlugin.ShakeType.Catalyst)
+                EventManager.inst.shakeVector = shakeSequence.Interpolate(time);
+
             for (int i = 0; i < allEvents.Count; i++)
             {
                 var nextKFIndex = allEvents[i].FindIndex(x => x.eventTime > time);
@@ -223,7 +235,7 @@ namespace EventsCore
                                 if (notLerper)
                                     next = 1f;
 
-                                var x = Lerp(prev, next, Ease.GetEaseFunction(nextKF.curveType.Name)(RTMath.InverseLerp(prevKF.eventTime, nextKF.eventTime, time)));
+                                var x = RTMath.Lerp(prev, next, Ease.GetEaseFunction(nextKF.curveType.Name)(RTMath.InverseLerp(prevKF.eventTime, nextKF.eventTime, time)));
 
                                 if (prevKFIndex == nextKFIndex)
                                     x = next;
@@ -413,7 +425,7 @@ namespace EventsCore
                 {
                     EventManager.inst.themeSequence = DOTween.Sequence();
                 }
-                if (EventManager.inst.shakeSequence == null)
+                if (EventManager.inst.shakeSequence == null && EventsCorePlugin.ShakeEventMode.Value == EventsCorePlugin.ShakeType.Original)
                 {
                     EventManager.inst.shakeSequence = DOTween.Sequence();
 
@@ -873,6 +885,7 @@ namespace EventsCore
                 "EVENT MANAGER\n",
                 currentEvent
             });
+            SetupShake();
             EventManager.inst.eventSequence.Kill();
             EventManager.inst.shakeSequence.Kill();
             EventManager.inst.themeSequence.Kill();
@@ -891,6 +904,7 @@ namespace EventsCore
         public IEnumerator updateEvents()
         {
             Debug.LogFormat("{0}Updating events", EventsCorePlugin.className);
+            SetupShake();
             EventManager.inst.eventSequence.Kill();
             EventManager.inst.shakeSequence.Kill();
             EventManager.inst.themeSequence.Kill();
@@ -1913,6 +1927,28 @@ namespace EventsCore
                     updateAudioVolume
                 }
         };
+
+        public float shakeSpeed = 1f;
+        public EaseFunction shakeEase = Ease.Linear;
+
+        public void SetupShake()
+        {
+            if (shakeSequence != null)
+                shakeSequence = null;
+
+            var list = new List<IKeyframe<Vector2>>();
+
+            float t = 0f;
+            while (t < AudioManager.inst.CurrentAudioSource.clip.length)
+            {
+                list.Add(new Vector2Keyframe(t, new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)), shakeEase));
+                t += Random.Range(0.08f, 0.14f) / Mathf.Clamp(shakeSpeed, 0.01f, 10f);
+            }
+
+            shakeSequence = new Sequence<Vector2>(list);
+        }
+
+        public Sequence<Vector2> shakeSequence;
 
         #endregion
     }

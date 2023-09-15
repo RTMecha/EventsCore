@@ -45,6 +45,14 @@ namespace EventsCore
 
 		public static ConfigEntry<bool> ShowIntro { get; set; }
 
+		public static ConfigEntry<ShakeType> ShakeEventMode { get; set; }
+
+		public enum ShakeType
+        {
+			Original,
+			Catalyst
+        }
+
 		void Awake()
 		{
 			inst = this;
@@ -59,6 +67,8 @@ namespace EventsCore
 			ShowGUIToggle = Config.Bind("Game", "Players & GUI Toggle Key", KeyCode.F9, "Press this key to toggle the players / GUI on or off.");
 
 			ShowIntro = Config.Bind("Game", "Show Intro", true, "Sets whether the Intro GUI is active / inactive.");
+
+			ShakeEventMode = Config.Bind("Events", "Shake Mode", ShakeType.Original, "Original is for the original shake method, while Catalyst is for the new shake method.");
 
 			Config.SettingChanged += new EventHandler<SettingChangedEventArgs>(UpdateSettings);
 
@@ -83,6 +93,9 @@ namespace EventsCore
 				ModCompatibility.sharedFunctions["EventsCoreEditorOffset"] = AllowCameraEvent.Value;
 			else
 				ModCompatibility.sharedFunctions.Add("EventsCoreEditorOffset", AllowCameraEvent.Value);
+
+			if (EventManager.inst)
+				EventManager.inst.updateEvents();
 		}
 
 		public static DataManager.GameData.EventKeyframe currentKeyframeSelection
