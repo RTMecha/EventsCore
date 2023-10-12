@@ -47,8 +47,10 @@ namespace EventsCore
 
             if (ModCompatibility.sharedFunctions.ContainsKey("EventsCoreEventOffsets"))
             {
+                ModCompatibility.sharedFunctions["EventsCoreEventOffsets"] = ResetOffsets();
                 offsets = ResetOffsets();
                 ModCompatibility.sharedFunctions["EventsCoreEventOffsets"] = ResetOffsets();
+                offsets = ResetOffsets();
             }
         }
 
@@ -83,8 +85,6 @@ namespace EventsCore
         // 11 - Music
         // 12 - Glitch
         // 13 - Misc
-
-        public float perspectiveZoom = 0.5f;
 
         public static bool Playable
         {
@@ -342,9 +342,9 @@ namespace EventsCore
                 EventManager.inst.camPer.fieldOfView = 50f;
 
                 if (!EventsCorePlugin.AllowCameraEvent.Value)
-                    EventManager.inst.camPer.transform.position = new Vector3(EventManager.inst.camPer.transform.position.x, EventManager.inst.camPer.transform.position.y, -(EventManager.inst.camZoom) / perspectiveZoom);
+                    EventManager.inst.camPer.transform.position = new Vector3(EventManager.inst.camPer.transform.position.x, EventManager.inst.camPer.transform.position.y, -(EventManager.inst.camZoom) / RTHelpers.perspectiveZoom);
                 else
-                    EventManager.inst.camPer.transform.position = new Vector3(EventManager.inst.camPer.transform.position.x, EventManager.inst.camPer.transform.position.y, -editorZoom / perspectiveZoom);
+                    EventManager.inst.camPer.transform.position = new Vector3(EventManager.inst.camPer.transform.position.x, EventManager.inst.camPer.transform.position.y, -editorZoom / RTHelpers.perspectiveZoom);
 
                 EventManager.inst.camPer.nearClipPlane = -EventManager.inst.camPer.transform.position.z + 10f;
 
