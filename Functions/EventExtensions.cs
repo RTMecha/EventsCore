@@ -26,34 +26,5 @@ namespace EventsCore.Functions
 
 			return list[index];
 		}
-
-		public static Color InvertColorHue(Color color)
-		{
-			double num;
-			double saturation;
-			double value;
-			LSColors.ColorToHSV(color, out num, out saturation, out value);
-			return LSColors.ColorFromHSV(num - 180.0, saturation, value);
-		}
-
-		public static Color InvertColorValue(Color color)
-		{
-			double num;
-			double sat;
-			double val;
-			LSColors.ColorToHSV(color, out num, out sat, out val);
-
-			if (val < 0.5)
-			{
-				val = -val + 1;
-			}
-			else
-			{
-				val = -(val - 1);
-			}
-
-			return LSColors.ColorFromHSV(num, sat, val);
-		}
-
 	}
 }
