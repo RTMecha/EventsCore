@@ -34,7 +34,19 @@ namespace EventsCore
 		public static string className = "[<color=#FFFFFF>EventsCore</color>] " + PluginInfo.PLUGIN_VERSION + "\n";
 		readonly Harmony harmony = new Harmony("EventsCore");
 
-		public static ConfigEntry<bool> AllowCameraEvent { get; set; }
+        #region Variables
+
+        public static Camera perspectiveCam;
+
+		public static Color bgColorToLerp;
+		public static Color timelineColorToLerp;
+
+        #endregion
+
+        #region Configs
+
+        public static ConfigEntry<bool> AllowCameraEvent { get; set; }
+
 		public static ConfigEntry<float> EditorSpeed { get; set; }
 
 		public static ConfigEntry<KeyCode> EditorCamToggle { get; set; }
@@ -53,7 +65,9 @@ namespace EventsCore
 			Catalyst
         }
 
-		void Awake()
+        #endregion
+
+        void Awake()
 		{
 			inst = this;
 
@@ -106,7 +120,9 @@ namespace EventsCore
 			}
         }
 
-		[HarmonyPatch(typeof(AudioManager), "Update")]
+        #region Patchers
+
+        [HarmonyPatch(typeof(AudioManager), "Update")]
 		[HarmonyPrefix]
 		static bool AudioUpdatePrefix(AudioManager __instance)
         {
@@ -190,7 +206,7 @@ namespace EventsCore
 
 		[HarmonyPatch(typeof(EventManager), "updateShake")]
 		[HarmonyPrefix]
-		private static bool EventManagerShakePrefix()
+		static bool EventManagerShakePrefix()
         {
 			RTEventManager.inst.updateShake();
 			return false;
@@ -215,24 +231,7 @@ namespace EventsCore
 
 		[HarmonyPatch(typeof(GameManager), "Start")]
 		[HarmonyPostfix]
-		private static void StartPatch(GameManager __instance)
-        {
-			SetTypes();
-			perspectiveCam = __instance.CameraPerspective.GetComponent<Camera>();
-		}
-
-		public static System.Type modifiers;
-		public static System.Type catalyst;
-
-		public static void SetTypes()
-        {
-			if (GameObject.Find("BepInEx_Manager").GetComponentByName("ObjectModifiersPlugin"))
-				modifiers = GameObject.Find("BepInEx_Manager").GetComponentByName("ObjectModifiersPlugin").GetType();
-			if (GameObject.Find("BepInEx_Manager").GetComponentByName("CatalystBase"))
-				catalyst = GameObject.Find("BepInEx_Manager").GetComponentByName("CatalystBase").GetType();
-		}
-
-		public static Camera perspectiveCam;
+		static void StartPatch(GameManager __instance) => perspectiveCam = __instance.CameraPerspective.GetComponent<Camera>();
 
 		[HarmonyPatch(typeof(GameManager), "UpdateTheme")]
 		[HarmonyPrefix]
@@ -273,224 +272,13 @@ namespace EventsCore
 			TextMeshProUGUI[] componentsInChildren2 = __instance.menuUI.GetComponentsInChildren<TextMeshProUGUI>();
 			for (int i = 0; i < componentsInChildren2.Length; i++)
 			{
-				//Change this to InvertColorHue(InvertColorValue(bgColorToLerp));
 				componentsInChildren2[i].color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(bgColorToLerp));
 			}
-			//for (int k = 0; k < BackgroundManager.inst.backgroundObjects.Count; k++)
-			//{
-			//	var backgroundObject = DataManager.inst.gameData.backgroundObjects[k];
-			//	var gameObject = BackgroundManager.inst.backgroundObjects[k];
-			//	Color color2 = beatmapTheme.backgroundColors[Mathf.Clamp(backgroundObject.color, 0, beatmapTheme.backgroundColors.Count - 1)];
-			//	color2.a = 1f;
-			//	gameObject.GetComponent<Renderer>().material.color = color2;
-			//	if (backgroundObject.drawFade)
-			//	{
-			//		int num2 = 9;
-			//		for (int l = 1; l < num2 - backgroundObject.layer; l++)
-			//		{
-			//			int num3 = num2 - backgroundObject.layer;
-			//			float t = color2.a / (float)num3 * (float)l;
-			//			Color b = beatmapTheme.backgroundColors[0];
-
-			//			var comp = gameObject.transform.GetChild(l - 1).GetComponent<Renderer>();
-
-			//			if (ColorMatch(b, beatmapTheme.backgroundColor, 0.05f))
-			//			{
-			//				b = bgColorToLerp;
-			//				b.a = 1f;
-			//				comp.material.color = Color.Lerp(Color.Lerp(color2, b, t), b, t);
-			//			}
-			//			else
-			//			{
-			//				b.a = 1f;
-			//				comp.material.color = Color.Lerp(Color.Lerp(color2, b, t), b, t);
-			//			}
-			//		}
-			//	}
-			//}
 			return false;
 		}
 
-		public static Color bgColorToLerp;
-		public static Color timelineColorToLerp;
+		#endregion
 
-		public static void SetShowable(bool _show, float _opacity, bool _highlightObjects, Color _highlightObjectsColor, Color _highlightObjectsDoubleColor)
-		{
-			showOnlyOnLayer = _show;
-			layerOpacityOffset = _opacity;
-			highlightObjects = _highlightObjects;
-			highlightObjectsColor = _highlightObjectsColor;
-			highlightObjectsDoubleColor = _highlightObjectsDoubleColor;
-		}
-
-		public static bool showOnlyOnLayer = false;
-		public static float layerOpacityOffset = 0.2f;
-		public static bool highlightObjects = false;
-		public static Color highlightObjectsColor;
-		public static Color highlightObjectsDoubleColor;
-
-		public static GameObject CreateCanvas(string _name = "")
-        {
-			string n = _name;
-			if (n == "")
-            {
-				n = "Canvas";
-            }
-			var inter = new GameObject(n);
-			inter.transform.localScale = Vector3.one * EditorManager.inst.ScreenScale;
-			var interfaceRT = inter.AddComponent<RectTransform>();
-			interfaceRT.anchoredPosition = new Vector2(960f, 540f);
-			interfaceRT.sizeDelta = new Vector2(1920f, 1080f);
-			interfaceRT.pivot = new Vector2(0.5f, 0.5f);
-			interfaceRT.anchorMin = Vector2.zero;
-			interfaceRT.anchorMax = Vector2.zero;
-
-			var canvas = inter.AddComponent<Canvas>();
-			canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.None;
-			canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.TexCoord1;
-			canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.Tangent;
-			canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.Normal;
-			canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-			canvas.scaleFactor = EditorManager.inst.ScreenScale;
-
-			var canvasScaler = inter.AddComponent<CanvasScaler>();
-			canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-			canvasScaler.referenceResolution = new Vector2(Screen.width, Screen.height);
-
-			Debug.LogFormat("{0}Canvas Scale Factor: {1}\nResoultion: {2}", className, canvas.scaleFactor, new Vector2(Screen.width, Screen.height));
-
-			inter.AddComponent<GraphicRaycaster>();
-
-			return inter;
-		}
-
-		public static bool ColorMatch(Color _col1, Color _col2, float _range, bool alpha = false)
-		{
-			if (alpha)
-				if (_col1.r < _col2.r + _range && _col1.r > _col2.r - _range && _col1.g < _col2.g + _range && _col1.g > _col2.g - _range && _col1.b < _col2.b + _range && _col1.b > _col2.b - _range && _col1.a < _col2.a + _range && _col1.a > _col2.a - _range)
-				{
-					return true;
-				}
-			else
-				if (_col1.r < _col2.r + _range && _col1.r > _col2.r - _range && _col1.g < _col2.g + _range && _col1.g > _col2.g - _range && _col1.b < _col2.b + _range && _col1.b > _col2.b - _range)
-				{
-					return true;
-				}
-
-			return false;
-        }
-
-		public static bool ColorRange(Color _base, Color _match, DataManager.VersionComparison _range, bool opacity = false, string val = "")
-		{
-			if (_range == DataManager.VersionComparison.EqualTo)
-			{
-				if (val.ToLower() == "r")
-				{
-					if (_base.r == _match.r)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "g")
-				{
-					if (_base.g == _match.g)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "b")
-				{
-					if (_base.b == _match.b)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "a")
-				{
-					if (_base.a == _match.a)
-                    {
-						return true;
-                    }
-				}
-
-				if (_base.r == _match.r && _base.g == _match.g && _base.b == _match.b && (opacity && _base.a == _match.a || !opacity))
-                {
-					return true;
-                }
-            }
-			else if (_range == DataManager.VersionComparison.LessThan)
-			{
-				if (val.ToLower() == "r")
-				{
-					if (_base.r < _match.r)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "g")
-				{
-					if (_base.g < _match.g)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "b")
-				{
-					if (_base.b < _match.b)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "a")
-				{
-					if (_base.a < _match.a)
-                    {
-						return true;
-                    }
-				}
-
-				if (_base.r < _match.r && _base.g < _match.g && _base.b < _match.b && (opacity && _base.a < _match.a || !opacity))
-                {
-					return true;
-                }
-            }
-			else if (_range == DataManager.VersionComparison.GreaterThan)
-			{
-				if (val.ToLower() == "r")
-				{
-					if (_base.r > _match.r)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "g")
-				{
-					if (_base.g > _match.g)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "b")
-				{
-					if (_base.b > _match.b)
-                    {
-						return true;
-                    }
-				}
-				if (val.ToLower() == "a")
-				{
-					if (_base.a > _match.a)
-                    {
-						return true;
-                    }
-				}
-
-				if (_base.r > _match.r && _base.g > _match.g && _base.b > _match.b && (opacity && _base.a > _match.a || !opacity))
-                {
-					return true;
-                }
-            }
-			return false;
-		}
+		public static void SetShowable(bool _show, float _opacity, bool _highlightObjects, Color _highlightObjectsColor, Color _highlightObjectsDoubleColor) => Debug.Log($"{className}Unused SetShowable");
 	}
 }
