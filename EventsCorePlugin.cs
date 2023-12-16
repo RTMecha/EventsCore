@@ -25,7 +25,7 @@ using RTFunctions.Functions.Managers;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.5.1")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.5.2")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
@@ -88,6 +88,15 @@ namespace EventsCore
 
 			ModCompatibility.sharedFunctions.Add("EventsCoreEditorOffset", AllowCameraEvent.Value);
 
+			if (!ModCompatibility.mods.ContainsKey("EventsCore"))
+            {
+				var mod = new ModCompatibility.Mod(inst, GetType());
+				ModCompatibility.mods.Add("EventsCore", mod);
+            }
+
+			RTFunctions.FunctionsPlugin.EventsCoreGameThemePrefix = UpdateThemePrefix;
+			RTFunctions.FunctionsPlugin.EventsCoreUpdateThemePrefix = EventManagerThemePrefix;
+
 			harmony.PatchAll(typeof(EventsCorePlugin));
 			harmony.PatchAll(typeof(EventsInstance));
 		}
@@ -112,17 +121,11 @@ namespace EventsCore
 				EventManager.inst.updateEvents();
 		}
 
-		public static DataManager.GameData.EventKeyframe currentKeyframeSelection
-        {
-			get
-            {
-				return DataManager.inst.gameData.eventObjects.allEvents[EventEditor.inst.currentEventType][EventEditor.inst.currentEvent];
-			}
-        }
+		public static DataManager.GameData.EventKeyframe CurrentKeyframeSelection => DataManager.inst.gameData.eventObjects.allEvents[EventEditor.inst.currentEventType][EventEditor.inst.currentEvent];
 
-        #region Patchers
+		#region Patchers
 
-        [HarmonyPatch(typeof(AudioManager), "Update")]
+		[HarmonyPatch(typeof(AudioManager), "Update")]
 		[HarmonyPrefix]
 		static bool AudioUpdatePrefix(AudioManager __instance)
         {
@@ -196,12 +199,9 @@ namespace EventsCore
 			return false;
         }
 
-		[HarmonyPatch(typeof(EventManager), "updateTheme")]
-		[HarmonyPrefix]
-		static bool EventManagerThemePrefix(float __0)
+		static void EventManagerThemePrefix(EventManager __instance, float __0)
         {
 			RTEventManager.updateTheme(__0);
-			return false;
         }
 
 		[HarmonyPatch(typeof(EventManager), "updateShake")]
@@ -233,9 +233,7 @@ namespace EventsCore
 		[HarmonyPostfix]
 		static void StartPatch(GameManager __instance) => perspectiveCam = __instance.CameraPerspective.GetComponent<Camera>();
 
-		[HarmonyPatch(typeof(GameManager), "UpdateTheme")]
-		[HarmonyPrefix]
-		static bool UpdateThemePrefix(GameManager __instance)
+		static void UpdateThemePrefix(GameManager __instance)
 		{
 			var beatmapTheme = RTHelpers.BeatmapTheme;
 			perspectiveCam.backgroundColor = bgColorToLerp;
@@ -252,7 +250,7 @@ namespace EventsCore
 				for (int i = 0; i < InputDataManager.inst.players.Count; i++)
 				{
 					if (InputDataManager.inst.players[i].player)
-						InputDataManager.inst.players[i].player.SetColor(beatmapTheme.GetPlayerColor(i), beatmapTheme.guiColor);
+						InputDataManager.inst.players[i].player.SetColor(beatmapTheme.GetPlayerColor(i), beatmapTheme.guiAccentColor);
 				}
 			}
 			if (EditorManager.inst == null && AudioManager.inst.CurrentAudioSource.time < 15f)
@@ -274,11 +272,8 @@ namespace EventsCore
 			{
 				componentsInChildren2[i].color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(bgColorToLerp));
 			}
-			return false;
 		}
 
 		#endregion
-
-		public static void SetShowable(bool _show, float _opacity, bool _highlightObjects, Color _highlightObjectsColor, Color _highlightObjectsDoubleColor) => Debug.Log($"{className}Unused SetShowable");
 	}
 }

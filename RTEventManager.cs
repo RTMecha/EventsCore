@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,9 +14,10 @@ using DG.Tweening.Core;
 using EventsCore.Functions;
 
 using RTFunctions.Functions;
-using RTFunctions.Functions.Managers;
 using RTFunctions.Functions.Animation;
 using RTFunctions.Functions.Animation.Keyframe;
+using RTFunctions.Functions.Data;
+using RTFunctions.Functions.Managers;
 using RTFunctions.Functions.IO;
 
 using DOSequence = DG.Tweening.Sequence;
@@ -86,13 +88,15 @@ namespace EventsCore
         // 12 - Glitch
         // 13 - Misc
 
-        public static bool Playable
-        {
-            get
-            {
-                return RTEffectsManager.inst && EventManager.inst && GameManager.inst && (GameManager.inst.gameState == GameManager.State.Playing || GameManager.inst.gameState == GameManager.State.Reversing) && DataManager.inst.gameData != null && DataManager.inst.gameData.eventObjects != null && DataManager.inst.gameData.eventObjects.allEvents != null && DataManager.inst.gameData.eventObjects.allEvents.Count > 0;
-            }
-        }
+        public static bool Playable =>
+            RTEffectsManager.inst &&
+            EventManager.inst &&
+            GameManager.inst &&
+            (GameManager.inst.gameState == GameManager.State.Playing || GameManager.inst.gameState == GameManager.State.Reversing) &&
+            DataManager.inst.gameData != null &&
+            DataManager.inst.gameData.eventObjects != null &&
+            DataManager.inst.gameData.eventObjects.allEvents != null &&
+            DataManager.inst.gameData.eventObjects.allEvents.Count > 0;
 
         void SpeedHandler()
         {
@@ -221,6 +225,10 @@ namespace EventsCore
                         {
                             if (events[i].Length > j && prevKF.eventValues.Length > j && events[i][j] != null)
                             {
+                                //var total = 0f;
+                                //for (int k = 0; k < nextKFIndex; k++)
+                                //    total += allEvents[i][k].eventValues[j];
+
                                 var next = nextKF.eventValues[j];
                                 var prev = prevKF.eventValues[j];
 
@@ -261,7 +269,7 @@ namespace EventsCore
                         }
                     }
                 }
-                else
+                else if (allEvents[i].Count > 0)
                 {
                     if (events.Length > i)
                     {
@@ -392,6 +400,33 @@ namespace EventsCore
                     GameManager.inst.timeline.transform.localPosition = new Vector3(timelinePos.x, timelinePos.y, 0f);
                     GameManager.inst.timeline.transform.localScale = new Vector3(timelineSca.x, timelineSca.y, 1f);
                     GameManager.inst.timeline.transform.eulerAngles = new Vector3(0f, 0f, timelineRot);
+                }
+
+                {
+                    for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
+                    {
+                        if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
+                        {
+                            //var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
+                            //if (rt != null)
+                            //{
+                            //    inst.playersCanMove = (bool)rt.GetType().GetProperty("CanMove").GetValue(rt);
+                            //}
+                            //else
+                            //{
+                            //    inst.playersCanMove = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove;
+                            //}
+
+                            var player = GameObject.Find(string.Format("Player {0}/Player", i + 1)).transform;
+                            //if (!inst.playersCanMove)
+                            //    player.GetComponent<Rigidbody2D>().velocity = new Vector2(player.transform.right.x, player.transform.right.y) * x;
+                            if (!playersCanMove)
+                            {
+                                player.localPosition = new Vector3(playerPositionX, playerPositionY, 0f);
+                                player.localRotation = Quaternion.Euler(0f, 0f, playerRotation);
+                            }
+                        }
+                    }
                 }
 
                 #endregion
@@ -706,127 +741,42 @@ namespace EventsCore
 
         public void LerpBloomColor()
         {
-            Color previous;
-            Color next;
-            if (GameManager.inst.LiveTheme.objectColors.Count > prevBloomColor && prevBloomColor > -1)
-            {
-                previous = GameManager.inst.LiveTheme.objectColors[prevBloomColor];
-            }
-            else
-            {
-                previous = Color.white;
-            }
-            if (GameManager.inst.LiveTheme.objectColors.Count > nextBloomColor && nextBloomColor > -1)
-            {
-                next = GameManager.inst.LiveTheme.objectColors[nextBloomColor];
-            }
-            else
-            {
-                next = Color.white;
-            }
+            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevBloomColor && prevBloomColor > -1 ? RTHelpers.BeatmapTheme.effectColors[prevBloomColor] : Color.white;
+            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextBloomColor && nextBloomColor > -1 ? RTHelpers.BeatmapTheme.effectColors[nextBloomColor] : Color.white;
 
             LSEffectsManager.inst.bloom.color.Override(Color.Lerp(previous, next, bloomColor));
         }
 
         public void LerpVignetteColor()
         {
-            Color previous;
-            Color next;
-            if (GameManager.inst.LiveTheme.objectColors.Count > prevVignetteColor && prevVignetteColor >= 0)
-            {
-                previous = GameManager.inst.LiveTheme.objectColors[prevVignetteColor];
-            }
-            else
-            {
-                previous = Color.black;
-            }
-            if (GameManager.inst.LiveTheme.objectColors.Count > nextVignetteColor && nextVignetteColor >= 0)
-            {
-                next = GameManager.inst.LiveTheme.objectColors[nextVignetteColor];
-            }
-            else
-            {
-                next = Color.black;
-            }
+            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevVignetteColor && prevVignetteColor > -1 ? RTHelpers.BeatmapTheme.effectColors[prevVignetteColor] : Color.black;
+            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextVignetteColor && nextVignetteColor > -1 ? RTHelpers.BeatmapTheme.effectColors[nextVignetteColor] : Color.black;
 
             LSEffectsManager.inst.vignette.color.Override(Color.Lerp(previous, next, vignetteColor));
         }
 
         public void LerpGradientColor1()
         {
-            Color previous;
-            Color next;
-            if (GameManager.inst.LiveTheme.objectColors.Count > prevGradientColor1 && prevGradientColor1 >= 0)
-            {
-                previous = GameManager.inst.LiveTheme.objectColors[prevGradientColor1];
-            }
-            else
-            {
-                previous = new Color(0f, 0.8f, 0.56f, 0.5f);
-            }
-            if (GameManager.inst.LiveTheme.objectColors.Count > nextGradientColor1 && nextGradientColor1 >= 0)
-            {
-                next = GameManager.inst.LiveTheme.objectColors[nextGradientColor1];
-            }
-            else
-            {
-                next = new Color(0f, 0.8f, 0.56f, 0.5f);
-            }
+            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor1 && prevGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor1] : new Color(0f, 0.8f, 0.56f, 0.5f);
+            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor1 && nextGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor1] : new Color(0f, 0.8f, 0.56f, 0.5f);
 
             RTEffectsManager.inst.gradient.color1.Override(Color.Lerp(previous, next, gradientColor1));
         }
 
         public void LerpGradientColor2()
         {
-            Color previous;
-            Color next;
-            if (GameManager.inst.LiveTheme.objectColors.Count > prevGradientColor2 && prevGradientColor2 >= 0)
-            {
-                previous = GameManager.inst.LiveTheme.objectColors[prevGradientColor2];
-            }
-            else
-            {
-                previous = new Color(0.81f, 0.37f, 1f, 0.5f);
-            }
-            if (GameManager.inst.LiveTheme.objectColors.Count > nextGradientColor2 && nextGradientColor2 >= 0)
-            {
-                next = GameManager.inst.LiveTheme.objectColors[nextGradientColor2];
-            }
-            else
-            {
-                next = new Color(0.81f, 0.37f, 1f, 0.5f);
-            }
+            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor2 && prevGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor2] : new Color(0.81f, 0.37f, 1f, 0.5f);
+            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor2 && nextGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor2] : new Color(0.81f, 0.37f, 1f, 0.5f);
 
             RTEffectsManager.inst.gradient.color2.Override(Color.Lerp(previous, next, gradientColor2));
         }
 
         public void LerpBGColor()
         {
-            Color previous;
-            Color next;
+            var beatmapTheme = RTHelpers.BeatmapTheme;
 
-            DataManager.BeatmapTheme beatmapTheme = GameManager.inst.LiveTheme;
-            if (EditorManager.inst != null && EventEditor.inst.showTheme)
-            {
-                beatmapTheme = EventEditor.inst.previewTheme;
-            }
-
-            if (beatmapTheme.objectColors.Count > prevBGColor && prevBGColor > -1)
-            {
-                previous = beatmapTheme.objectColors[prevBGColor];
-            }
-            else
-            {
-                previous = beatmapTheme.backgroundColor;
-            }
-            if (beatmapTheme.objectColors.Count > nextBGColor && nextBGColor > -1)
-            {
-                next = beatmapTheme.objectColors[nextBGColor];
-            }
-            else
-            {
-                next = beatmapTheme.backgroundColor;
-            }
+            Color previous = beatmapTheme.effectColors.Count > prevBGColor && prevBGColor > -1 ? beatmapTheme.effectColors[prevBGColor] : beatmapTheme.backgroundColor;
+            Color next = beatmapTheme.effectColors.Count > nextBGColor && nextBGColor > -1 ? beatmapTheme.effectColors[nextBGColor] : beatmapTheme.backgroundColor;
 
             float num = bgColor;
             if (float.IsNaN(num) || num < 0f)
@@ -839,31 +789,10 @@ namespace EventsCore
 
         public void LerpTimelineColor()
         {
-            Color previous;
-            Color next;
+            var beatmapTheme = RTHelpers.BeatmapTheme;
 
-            DataManager.BeatmapTheme beatmapTheme = GameManager.inst.LiveTheme;
-            if (EditorManager.inst != null && EventEditor.inst.showTheme)
-            {
-                beatmapTheme = EventEditor.inst.previewTheme;
-            }
-
-            if (beatmapTheme.objectColors.Count > prevTimelineColor && prevTimelineColor > -1)
-            {
-                previous = beatmapTheme.objectColors[prevTimelineColor];
-            }
-            else
-            {
-                previous = beatmapTheme.guiColor;
-            }
-            if (beatmapTheme.objectColors.Count > nextTimelineColor && nextTimelineColor > -1)
-            {
-                next = beatmapTheme.objectColors[nextTimelineColor];
-            }
-            else
-            {
-                next = beatmapTheme.guiColor;
-            }
+            Color previous = beatmapTheme.effectColors.Count > prevTimelineColor && prevTimelineColor > -1 ? beatmapTheme.effectColors[prevTimelineColor] : beatmapTheme.guiColor;
+            Color next = beatmapTheme.effectColors.Count > nextTimelineColor && nextTimelineColor > -1 ? beatmapTheme.effectColors[nextTimelineColor] : beatmapTheme.guiColor;
 
             float num = timelineColor;
             if (float.IsNaN(num) || num < 0f)
@@ -924,18 +853,19 @@ namespace EventsCore
 
         public void updateShake()
         {
-            Vector3 vector = EventManager.inst.shakeVector * EventManager.inst.shakeMultiplier;
+            var vector = EventManager.inst.shakeVector * EventManager.inst.shakeMultiplier;
             vector.x *= shakeX;
             vector.y *= shakeY;
             vector.z = 0f;
+
+            if (vector.x == 0f && vector.y == 0f)
+                vector = new Vector3(1f, 1f, 0f);
+
             if (float.IsNaN(vector.x) || float.IsNaN(vector.y) || float.IsNaN(vector.z))
-            {
                 vector = Vector3.zero;
-            }
+
             if (!float.IsNaN(camOffsetX) && !float.IsNaN(camOffsetY))
-            {
                 EventManager.inst.camParent.transform.localPosition = vector + new Vector3(camOffsetX, camOffsetY, 0f);
-            }
         }
 
         // 0 - 0
@@ -962,14 +892,12 @@ namespace EventsCore
         public static void updateTheme(float x)
         {
             inst.themeLerp = x;
-            DataManager.BeatmapTheme beatmapTheme = DataManager.BeatmapTheme.DeepCopy(GameManager.inst.LiveTheme, false);
+            var beatmapTheme = BeatmapTheme.DeepCopy((BeatmapTheme)GameManager.inst.LiveTheme);
 
-            GameManager.inst.LiveTheme.Lerp(DataManager.inst.GetTheme(EventManager.inst.LastTheme), DataManager.inst.GetTheme(EventManager.inst.NewTheme), x);
+            ((BeatmapTheme)GameManager.inst.LiveTheme).Lerp((BeatmapTheme)DataManager.inst.GetTheme(EventManager.inst.LastTheme), (BeatmapTheme)DataManager.inst.GetTheme(EventManager.inst.NewTheme), x);
 
-            if (beatmapTheme != GameManager.inst.LiveTheme)
-            {
+            if (beatmapTheme != (BeatmapTheme)GameManager.inst.LiveTheme)
                 GameManager.inst.UpdateTheme();
-            }
         }
 
         // 5 - 0
@@ -1204,83 +1132,32 @@ namespace EventsCore
         // 23 - 1
         public static void updatePlayerMoveable(float x)
         {
-            if ((int)x == 0)
+            for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
             {
-                for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
+                if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
                 {
-                    if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
+                    inst.playersCanMove = (int)x == 0;
+                    var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
+                    if (rt != null)
                     {
-                        inst.playersCanMove = true;
-                        var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
-                        if (rt != null)
-                        {
-                            rt.GetType().GetProperty("CanMove").SetValue(rt, true);
-                        }
-                        else
-                        {
-                            GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove = true;
-                        }
+                        rt.GetType().GetProperty("CanMove").SetValue(rt, inst.playersCanMove);
                     }
-                }
-            }
-            else if ((int)x == 1)
-            {
-                for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
-                {
-                    if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
+                    else
                     {
-                        inst.playersCanMove = false;
-                        var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
-                        if (rt != null)
-                        {
-                            rt.GetType().GetProperty("CanMove").SetValue(rt, false);
-                        }
-                        else
-                        {
-                            GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove = false;
-                        }
+                        GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove = inst.playersCanMove;
                     }
                 }
             }
         }
 
         // 23 - 2
-        public static void updatePlayerVelocity(float x)
-        {
-            for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
-            {
-                if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
-                {
-                    var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
-                    if (rt != null)
-                    {
-                        inst.playersCanMove = (bool)rt.GetType().GetProperty("CanMove").GetValue(rt);
-                    }
-                    else
-                    {
-                        inst.playersCanMove = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove;
-                    }
-
-                    var player = GameObject.Find(string.Format("Player {0}/Player", i + 1)).transform;
-                    if (!inst.playersCanMove)
-                        player.GetComponent<Rigidbody2D>().velocity = new Vector2(player.transform.right.x, player.transform.right.y) * x;
-                }
-            }
-        }
+        public static void updatePlayerPositionX(float x) => inst.playerPositionX = x;
 
         // 23 - 3
-        public static void updatePlayerRotation(float x)
-        {
-            for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
-            {
-                if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
-                {
-                    var player = GameObject.Find(string.Format("Player {0}/Player", i + 1)).transform;
-                    if (!inst.playersCanMove)
-                        player.localEulerAngles = new Vector3(0f, 0f, x);
-                }
-            }
-        }
+        public static void updatePlayerPositionY(float x) => inst.playerPositionY = x;
+
+        // 23 - 4
+        public static void updatePlayerRotation(float x) => inst.playerRotation = x;
 
         // 24 - 0
         public static void updateDelayTrackerActive(float x) => inst.delayTracker.active = (int)x == 1;
@@ -1328,6 +1205,10 @@ namespace EventsCore
         public float camOffsetY;
 
         public float audioVolume = 1f;
+
+        public float playerRotation;
+        public float playerPositionX;
+        public float playerPositionY;
 
         public bool playersCanMove = true;
         public bool playersActive = true;
@@ -1905,7 +1786,8 @@ namespace EventsCore
                 {
                     updatePlayerActive,
                     updatePlayerMoveable,
-                    updatePlayerVelocity,
+                    updatePlayerPositionX,
+                    updatePlayerPositionY,
                     updatePlayerRotation
                 },
                 new KFDelegate[]
