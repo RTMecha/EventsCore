@@ -854,12 +854,9 @@ namespace EventsCore
         public void updateShake()
         {
             var vector = EventManager.inst.shakeVector * EventManager.inst.shakeMultiplier;
-            vector.x *= shakeX;
-            vector.y *= shakeY;
+            vector.x *= shakeX == 0f && shakeY == 0f ? 1f : shakeX;
+            vector.y *= shakeX == 0f && shakeY == 0f ? 1f : shakeY;
             vector.z = 0f;
-
-            if (vector.x == 0f && vector.y == 0f)
-                vector = new Vector3(1f, 1f, 0f);
 
             if (float.IsNaN(vector.x) || float.IsNaN(vector.y) || float.IsNaN(vector.z))
                 vector = Vector3.zero;
