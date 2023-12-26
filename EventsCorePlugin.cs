@@ -20,12 +20,13 @@ using DG.Tweening;
 using EventsCore.Functions;
 
 using RTFunctions.Functions;
+using RTFunctions.Functions.Data.Player;
 using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.5.2")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.5.4")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
@@ -35,8 +36,6 @@ namespace EventsCore
 		readonly Harmony harmony = new Harmony("EventsCore");
 
         #region Variables
-
-        public static Camera perspectiveCam;
 
 		public static Color bgColorToLerp;
 		public static Color timelineColorToLerp;
@@ -229,30 +228,19 @@ namespace EventsCore
 			return false;
         }
 
-		[HarmonyPatch(typeof(GameManager), "Start")]
-		[HarmonyPostfix]
-		static void StartPatch(GameManager __instance) => perspectiveCam = __instance.CameraPerspective.GetComponent<Camera>();
-
 		static void UpdateThemePrefix(GameManager __instance)
 		{
 			var beatmapTheme = RTHelpers.BeatmapTheme;
-			perspectiveCam.backgroundColor = bgColorToLerp;
+			GameStorageManager.inst.perspectiveCam.backgroundColor = bgColorToLerp;
 
 			RTFunctions.Patchers.BackgroundManagerPatch.bgColorToLerp = bgColorToLerp;
 
-			Image[] componentsInChildren = __instance.timeline.GetComponentsInChildren<Image>();
+			var componentsInChildren = __instance.timeline.GetComponentsInChildren<Image>();
 			for (int i = 0; i < componentsInChildren.Length; i++)
 			{
 				componentsInChildren[i].color = timelineColorToLerp;
 			}
-			if (InputDataManager.inst.players.Count > 0)
-            {
-				for (int i = 0; i < InputDataManager.inst.players.Count; i++)
-				{
-					if (InputDataManager.inst.players[i].player)
-						InputDataManager.inst.players[i].player.SetColor(beatmapTheme.GetPlayerColor(i), beatmapTheme.guiAccentColor);
-				}
-			}
+
 			if (EditorManager.inst == null && AudioManager.inst.CurrentAudioSource.time < 15f)
 			{
 				if (__instance.introTitle.color != timelineColorToLerp)

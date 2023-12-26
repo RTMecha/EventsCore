@@ -208,7 +208,9 @@ namespace EventsCore
 
             for (int i = 0; i < allEvents.Count; i++)
             {
-                var nextKFIndex = allEvents[i].FindIndex(x => x.eventTime > time);
+                var list = allEvents[i].OrderBy(x => x.eventTime).ToList();
+
+                var nextKFIndex = list.FindIndex(x => x.eventTime > time);
 
                 if (nextKFIndex >= 0)
                 {
@@ -216,8 +218,8 @@ namespace EventsCore
                     if (prevKFIndex < 0)
                         prevKFIndex = 0;
 
-                    var nextKF = allEvents[i][nextKFIndex];
-                    var prevKF = allEvents[i][prevKFIndex];
+                    var nextKF = list[nextKFIndex];
+                    var prevKF = list[prevKFIndex];
 
                     if (events.Length > i)
                     {
@@ -269,17 +271,17 @@ namespace EventsCore
                         }
                     }
                 }
-                else if (allEvents[i].Count > 0)
+                else if (list.Count > 0)
                 {
                     if (events.Length > i)
                     {
-                        for (int j = 0; j < allEvents[i][allEvents[i].Count - 1].eventValues.Length; j++)
+                        for (int j = 0; j < list[list.Count - 1].eventValues.Length; j++)
                         {
                             if (events[i].Length > j && events[i][j] != null)
                             {
                                 bool notLerper = i == 4 || i == 6 && j == 4 || i == 7 && j == 6 || i == 15 && (j == 2 || j == 3) || i == 20 || i == 22 && j == 6;
 
-                                var x = allEvents[i][allEvents[i].Count - 1].eventValues[j];
+                                var x = list[list.Count - 1].eventValues[j];
 
                                 if (float.IsNaN(x))
                                     x = 0f;
@@ -403,23 +405,36 @@ namespace EventsCore
                 }
 
                 {
-                    for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
-                    {
-                        if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
-                        {
-                            //var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
-                            //if (rt != null)
-                            //{
-                            //    inst.playersCanMove = (bool)rt.GetType().GetProperty("CanMove").GetValue(rt);
-                            //}
-                            //else
-                            //{
-                            //    inst.playersCanMove = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove;
-                            //}
+                    //for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
+                    //{
+                    //    if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
+                    //    {
+                    //        //var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
+                    //        //if (rt != null)
+                    //        //{
+                    //        //    inst.playersCanMove = (bool)rt.GetType().GetProperty("CanMove").GetValue(rt);
+                    //        //}
+                    //        //else
+                    //        //{
+                    //        //    inst.playersCanMove = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove;
+                    //        //}
 
-                            var player = GameObject.Find(string.Format("Player {0}/Player", i + 1)).transform;
-                            //if (!inst.playersCanMove)
-                            //    player.GetComponent<Rigidbody2D>().velocity = new Vector2(player.transform.right.x, player.transform.right.y) * x;
+                    //        var player = GameObject.Find(string.Format("Player {0}/Player", i + 1)).transform;
+                    //        //if (!inst.playersCanMove)
+                    //        //    player.GetComponent<Rigidbody2D>().velocity = new Vector2(player.transform.right.x, player.transform.right.y) * x;
+                    //        if (!playersCanMove)
+                    //        {
+                    //            player.localPosition = new Vector3(playerPositionX, playerPositionY, 0f);
+                    //            player.localRotation = Quaternion.Euler(0f, 0f, playerRotation);
+                    //        }
+                    //    }
+                    //}
+
+                    foreach (var customPlayer in PlayerManager.Players)
+                    {
+                        if (customPlayer.Player && customPlayer.Player.playerObjects.ContainsKey("RB Parent"))
+                        {
+                            var player = customPlayer.Player.playerObjects["RB Parent"].gameObject.transform;
                             if (!playersCanMove)
                             {
                                 player.localPosition = new Vector3(playerPositionX, playerPositionY, 0f);
@@ -1129,20 +1144,30 @@ namespace EventsCore
         // 23 - 1
         public static void updatePlayerMoveable(float x)
         {
-            for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
+            //for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
+            //{
+            //    if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
+            //    {
+            //        inst.playersCanMove = (int)x == 0;
+            //        var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
+            //        if (rt != null)
+            //        {
+            //            rt.GetType().GetProperty("CanMove").SetValue(rt, inst.playersCanMove);
+            //        }
+            //        else
+            //        {
+            //            GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove = inst.playersCanMove;
+            //        }
+            //    }
+            //}
+
+            inst.playersCanMove = (int)x == 0;
+            foreach (var customPlayer in PlayerManager.Players)
             {
-                if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
+                if (customPlayer.Player)
                 {
-                    inst.playersCanMove = (int)x == 0;
-                    var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
-                    if (rt != null)
-                    {
-                        rt.GetType().GetProperty("CanMove").SetValue(rt, inst.playersCanMove);
-                    }
-                    else
-                    {
-                        GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove = inst.playersCanMove;
-                    }
+                    customPlayer.Player.CanMove = inst.playersCanMove;
+                    customPlayer.Player.CanRotate = inst.playersCanMove;
                 }
             }
         }
