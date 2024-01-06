@@ -1,2 +1,5 @@
-1.5.4 > Events now properly order by time if they're not.
-1.5.4 > Use new Player data instead of using reflection to get data.
+1.5.5 > [Jan 6, 2024]
+- Fixed Event Offsets so they properly reset when loading another level.
+1.5.4 > [Dec 23, 2023]
+- Events now properly order by time if they're not.
+- Use new Player data instead of using reflection to get data.
