@@ -36,24 +36,21 @@ namespace EventsCore
         void Awake()
         {
             if (inst == null)
-            {
                 inst = this;
-                return;
-            }
-            if (inst != this)
-            {
+            else if (inst != this)
                 Destroy(gameObject);
-            }
 
-            LSEffectsManager.inst.vignette.color.overrideState = true;
+            Reset();
 
-            if (ModCompatibility.sharedFunctions.ContainsKey("EventsCoreEventOffsets"))
-            {
-                ModCompatibility.sharedFunctions["EventsCoreEventOffsets"] = ResetOffsets();
-                offsets = ResetOffsets();
-                ModCompatibility.sharedFunctions["EventsCoreEventOffsets"] = ResetOffsets();
-                offsets = ResetOffsets();
-            }
+            if (!ModCompatibility.sharedFunctions.ContainsKey("EventsCoreResetOffsets"))
+                ModCompatibility.sharedFunctions.Add("EventsCoreResetOffsets", (Action)Reset);
+            else
+                ModCompatibility.sharedFunctions["EventsCoreResetOffsets"] = (Action)Reset;
+        }
+
+        public void Reset()
+        {
+            ModCompatibility.sharedFunctions["EventsCoreEventOffsets"] = ResetOffsets();
         }
 
         //LAYER 1:
@@ -327,6 +324,52 @@ namespace EventsCore
             {
                 InputDataManager.inst.SetAllControllerRumble(EventManager.inst.shakeMultiplier);
 
+                #region Lerp Colors
+
+                if (!float.IsNaN(bloomColor))
+                    LerpBloomColor();
+                if (!float.IsNaN(vignetteColor))
+                    LerpVignetteColor();
+                if (!float.IsNaN(gradientColor1))
+                    LerpGradientColor1();
+                if (!float.IsNaN(gradientColor2))
+                    LerpGradientColor2();
+                if (!float.IsNaN(bgColor))
+                    LerpBGColor();
+                if (!float.IsNaN(timelineColor))
+                    LerpTimelineColor();
+
+                FindColors();
+
+                #endregion
+
+                #region New Sequences
+
+                if (EventManager.inst.eventSequence == null)
+                {
+                    EventManager.inst.eventSequence = DOTween.Sequence();
+                }
+                if (EventManager.inst.themeSequence == null)
+                {
+                    EventManager.inst.themeSequence = DOTween.Sequence();
+                }
+                if (EventManager.inst.shakeSequence == null && EventsCorePlugin.ShakeEventMode.Value == EventsCorePlugin.ShakeType.Original)
+                {
+                    EventManager.inst.shakeSequence = DOTween.Sequence();
+
+                    float strength = 3f;
+                    int vibrato = 10;
+                    float randomness = 90f;
+                    EventManager.inst.shakeSequence.Insert(0f, DOTween.Shake(() => Vector3.zero, delegate (Vector3 x)
+                    {
+                        EventManager.inst.shakeVector = x;
+                    }, AudioManager.inst.CurrentAudioSource.clip.length, strength, vibrato, randomness, true, false));
+                }
+
+                #endregion
+
+                Interpolate();
+
                 #region Camera
 
                 if (float.IsNaN(EventManager.inst.camRot))
@@ -404,93 +447,20 @@ namespace EventsCore
                     GameManager.inst.timeline.transform.eulerAngles = new Vector3(0f, 0f, timelineRot);
                 }
 
+                foreach (var customPlayer in PlayerManager.Players)
                 {
-                    //for (int i = 0; i < GameManager.inst.players.transform.childCount; i++)
-                    //{
-                    //    if (GameObject.Find(string.Format("Player {0}/Player", i + 1)))
-                    //    {
-                    //        //var rt = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponentByName("RTPlayer");
-                    //        //if (rt != null)
-                    //        //{
-                    //        //    inst.playersCanMove = (bool)rt.GetType().GetProperty("CanMove").GetValue(rt);
-                    //        //}
-                    //        //else
-                    //        //{
-                    //        //    inst.playersCanMove = GameObject.Find(string.Format("Player {0}", i + 1)).GetComponent<Player>().CanMove;
-                    //        //}
-
-                    //        var player = GameObject.Find(string.Format("Player {0}/Player", i + 1)).transform;
-                    //        //if (!inst.playersCanMove)
-                    //        //    player.GetComponent<Rigidbody2D>().velocity = new Vector2(player.transform.right.x, player.transform.right.y) * x;
-                    //        if (!playersCanMove)
-                    //        {
-                    //            player.localPosition = new Vector3(playerPositionX, playerPositionY, 0f);
-                    //            player.localRotation = Quaternion.Euler(0f, 0f, playerRotation);
-                    //        }
-                    //    }
-                    //}
-
-                    foreach (var customPlayer in PlayerManager.Players)
+                    if (customPlayer.Player && customPlayer.Player.playerObjects.ContainsKey("RB Parent"))
                     {
-                        if (customPlayer.Player && customPlayer.Player.playerObjects.ContainsKey("RB Parent"))
+                        var player = customPlayer.Player.playerObjects["RB Parent"].gameObject.transform;
+                        if (!playersCanMove)
                         {
-                            var player = customPlayer.Player.playerObjects["RB Parent"].gameObject.transform;
-                            if (!playersCanMove)
-                            {
-                                player.localPosition = new Vector3(playerPositionX, playerPositionY, 0f);
-                                player.localRotation = Quaternion.Euler(0f, 0f, playerRotation);
-                            }
+                            player.localPosition = new Vector3(playerPositionX, playerPositionY, 0f);
+                            player.localRotation = Quaternion.Euler(0f, 0f, playerRotation);
                         }
                     }
                 }
 
                 #endregion
-
-                #region Lerp Colors
-
-                if (!float.IsNaN(bloomColor))
-                    LerpBloomColor();
-                if (!float.IsNaN(vignetteColor))
-                    LerpVignetteColor();
-                if (!float.IsNaN(gradientColor1))
-                    LerpGradientColor1();
-                if (!float.IsNaN(gradientColor2))
-                    LerpGradientColor2();
-                if (!float.IsNaN(bgColor))
-                    LerpBGColor();
-                if (!float.IsNaN(timelineColor))
-                    LerpTimelineColor();
-
-                FindColors();
-
-                #endregion
-
-                #region New Sequences
-
-                if (EventManager.inst.eventSequence == null)
-                {
-                    EventManager.inst.eventSequence = DOTween.Sequence();
-                }
-                if (EventManager.inst.themeSequence == null)
-                {
-                    EventManager.inst.themeSequence = DOTween.Sequence();
-                }
-                if (EventManager.inst.shakeSequence == null && EventsCorePlugin.ShakeEventMode.Value == EventsCorePlugin.ShakeType.Original)
-                {
-                    EventManager.inst.shakeSequence = DOTween.Sequence();
-
-                    float strength = 3f;
-                    int vibrato = 10;
-                    float randomness = 90f;
-                    EventManager.inst.shakeSequence.Insert(0f, DOTween.Shake(() => Vector3.zero, delegate (Vector3 x)
-                    {
-                        EventManager.inst.shakeVector = x;
-                    }, AudioManager.inst.CurrentAudioSource.clip.length, strength, vibrato, randomness, true, false));
-                }
-
-                #endregion
-
-                Interpolate();
             }
 
             EventManager.inst.prevCamZoom = EventManager.inst.camZoom;
