@@ -3,3 +3,88 @@
 1.5.4 > [Dec 23, 2023]
 - Events now properly order by time if they're not.
 - Use new Player data instead of using reflection to get data.
+1.5.3 > [Dec 18, 2023]
+- Fix for shake X and Y having some issues.
+1.5.2 > [Oct 28, 2023]
+- Added a README file.
+- Removed some unused files.
+1.5.1 > [Oct 12, 2023]
+- Added perspective zoom saving / loading. Currently not editable anywhere in the editor, but can be accessed through the level.lsb.
+- Theme optimization (like removing setting background colors since that's not needed anymore)
+1.5.0 > [Sep 10, 2023]
+- Replaced the original DOTween animation system with the Catalyst animation system, so everything should be a lot smoother now!
+- Fixed previous theme flash bug.
+1.4.3 > [Sep 10, 2023]
+- Removed Overlay and replaced it with an Invert keyframe that inverts every color on screen.
+1.4.2 > [Aug 29, 2023]
+- Intro text is now included when setting timeline active / inactive.
+1.4.1 > [Aug 21, 2023]
+- Added event offsets for ObjectModifiers to use.
+- Changed some editor camera stuff.
+1.4.0 > [Aug 12, 2023]
+- Added Editor camera offset, useful for looking around and debugging a level.
+1.3.7 > [Aug 4, 2023]
+- Fixed camera move and rotate issue.
+- Camera now properly moves at an offset from the camera following the player.
+1.3.6 > [Aug 4, 2023]
+- Added Limit Left & Right & Up & Down and Anchor to the Follow Player event.
+1.3.5 > [Jul 13, 2023]
+- Fixed some issues and implemented RTFunctions (1.0.3).
+1.3.4 > [Jul 3, 2023]
+- Fixed a few bugs and added pitch offset for EditorManagement and ObjectModifiers to use.
+1.3.3 > [Jun 24, 2023]
+- Hopefully fixed something to do with theme event keyframes...?
+- Added Player, Follow Player and Audio event keyframes.
+1.3.2 > [Jun 17, 2023]
+- Added an option for turning the overlay on/off. Having it on at start will prevent the editor from being used.
+1.3.1 > [Jun 16, 2023]
+- If shake X and shake Y are zero, they both will be set to 1 in case the shake keyframe doesn't load stuff correctly.
+- Fixed a timeline keyframe skill issue.
+1.3.0 > [Jun 16, 2023]
+- Fixed a problem where some keyframes won't update correctly when the current audio time is after the keyframe.
+- Added a ton of new events and values to events, such as the following:
+--Shake now has X and Y values
+--Bloom now has Diffusion, Threshold, Anamorphic Ratio and Color
+--Vignette now has Color
+--Lens now has Center X / Y, Intensity X / Y and Scale
+--New Keyframe: Camera Offset (Moves the camera at an offset from the current Move values. Good for layering animations much like layering animations with parenting.)
+--New Keyframe: Gradient (Offers an overlay that covers the entire screen with two colors in a gradient. Basically works the same as Editor Alpha gradient, but has a new option: "Mode")
+--New Keyframe: DoubleVision (Blurs the screen in two directions, creating a "doubled vision" effect as the name implies)
+--New Keyframe: ScanLines (Overlays the screen with lines similar to analog TV screens)
+--New Keyframe: Blur (Blurs the screen with custom iterations)
+--New Keyframe: Pixelize (Makes the screen more pixel-y)
+--New Keyframe: BG Color (Allows you to change the color of the BG without having to change the theme. You can change the color to any of the object colors, same with every other color value in an event keyframe)
+--New Keyframe: Screen Overlay (A specific color is overlayed on the screen with customizable transparency)
+--New Keyframe: Timeline (Set the timeline inactive or move it around to wherever you want, or even set a custom color)
+-Moved some more editor functionality to EditorManagement, so you do need EditorManagement in order to use these features in the editor.
+1.2.1 > [May 6, 2023]
+- Fixed the issue where you couldn't right click the timeline to create a keyframe.
+1.2.0 > [May 2, 2023]
+- Finally implemented some new events to the game, filling out the rest of the event layer rows.
+The new events include:
+--New Keyframe: ColorGrading (Hueshift, Saturation, Contrast, Temperature, Tint and Gamma (Though at this time Gamma can't be accessed in the editor))
+--New Keyframe: Ripples (Water-like effect)
+--New Keyframe: RadialBlur (Super intense blur effect)
+--New Keyframe: ColorSplit (Similar to chroma, except it splits the color channels across the screen instead of to the corners)
+1.1.2 > [Feb 16, 2023]
+- Fixed an issue with the mod not working in arcade.
+1.1.1 > [Jan 18, 2023]
+- Adds some more functionality for Object Tags.
+1.1.0 [Jan 12, 2023]
+- Adds Black Bars, Color Split, Danger, Invert, Mosaic, Tilt Shift and Tube Distortion effects to the internals of the game.
+1.0.0 > [Jan 7, 2023]
+- Adds unused Post Processing Effects to the internals of the game, allowing for other mods to use it.
+[BELOW IS EVENTSPLUS, BACK WHEN YOU COULD ONLY MODIFY THE VALUES THROUGH CONFIG]
+1.4.0 > [Jan 14, 2023]
+- Adds scrolling to the event input fields.
+- Maybe fixes a loading issue, Idk
+1.3.0 > [Jan 7, 2023]
+- Moved all the core handlings to Events Core mod.
+1.2.1 > [Dec 19, 2022]
+- Fixed a minor issue where rotate was set to shake's input field. 
+1.2.0 > [Dec 19, 2022]
+- Began laying the groundwork for adding the new events: ColorGrading, Gradient, DoubleVision, RadialBlur, Scanlines and Sharpen to the game as actual events. They now exist as apart of the post processing effects and can be modified via the Config Entry.
+1.1.0 > [Dec 19, 2022]
+Finally an update to Events Plus. This is the "Unclamped" update that removes the unnecessary limits to the events. You can also customize the amount each event increases by when you click on the arrows. Oh also, there's cam offset like the Camera Follow Player mod.
+1.0.0 > [Dec 2, 2022]
+- Want to use the unused effects? Now you can with this mod! Future versions will add the effects to the game via new event bins, event layers, editor dialog stuff, etc.
