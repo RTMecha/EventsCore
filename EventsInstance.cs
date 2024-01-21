@@ -28,6 +28,8 @@ namespace EventsCore
             __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); //Player
             __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); //Follow Player
             __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); //Music
+            //__instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); //Video BG Offset
+            //__instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); //Video BG
         }
     }
 }
