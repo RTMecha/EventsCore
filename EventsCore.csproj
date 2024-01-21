@@ -36,6 +36,9 @@
     <Reference Include="DOTween">
       <HintPath>..\lib\DOTween.dll</HintPath>
     </Reference>
+    <Reference Include="InControl">
+      <HintPath>..\lib\InControl.dll</HintPath>
+    </Reference>
     <Reference Include="RTFunctions">
       <HintPath>..\RTFunctions\bin\Debug\net46\RTFunctions.dll</HintPath>
     </Reference>
