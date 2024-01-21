@@ -44,9 +44,9 @@ namespace EventsCore
 
         #region Configs
 
-        public static ConfigEntry<bool> AllowCameraEvent { get; set; }
+        public static ConfigEntry<bool> EditorCamEnabled { get; set; }
 
-		public static ConfigEntry<float> EditorSpeed { get; set; }
+		public static ConfigEntry<float> EditorCamSpeed { get; set; }
 
 		public static ConfigEntry<KeyCode> EditorCamToggle { get; set; }
 
@@ -55,6 +55,8 @@ namespace EventsCore
 		public static ConfigEntry<KeyCode> ShowGUIToggle { get; set; }
 
 		public static ConfigEntry<bool> ShowIntro { get; set; }
+
+		public static ConfigEntry<bool> ShowFX { get; set; }
 
 		public static ConfigEntry<ShakeType> ShakeEventMode { get; set; }
 
@@ -72,8 +74,8 @@ namespace EventsCore
 
 			Logger.LogInfo($"Plugin Events Core is loaded!");
 
-			AllowCameraEvent = Config.Bind("Camera", "Editor Camera Offset", false, "Enabling this will disable all regular Camera events (move, zoom, etc) and allow you to move the camera around freely. WASD to move, + and - to zoom and numpad 4 / numpad 6 to rotate.");
-			EditorSpeed = Config.Bind("Camera", "Editor Camera Speed", 1f, "How fast the editor camera moves");
+			EditorCamEnabled = Config.Bind("Camera", "Editor Camera Offset", false, "Enabling this will disable all regular Camera events (move, zoom, etc) and allow you to move the camera around freely. WASD to move, + and - to zoom and numpad 4 / numpad 6 to rotate.");
+			EditorCamSpeed = Config.Bind("Camera", "Editor Camera Speed", 1f, "How fast the editor camera moves");
 			EditorCamToggle = Config.Bind("Camera", "Editor Camera Toggle Key", KeyCode.F2, "Press this key to toggle the Editor Camera on or off.");
 
 			ShowGUI = Config.Bind("Game", "Players & GUI Active", true, "Sets the players and GUI elements active / inactive.");
@@ -81,11 +83,13 @@ namespace EventsCore
 
 			ShowIntro = Config.Bind("Game", "Show Intro", true, "Sets whether the Intro GUI is active / inactive.");
 
+			ShowFX = Config.Bind("Events", "Show Effects", true, "If disabled, effects like chroma, bloom, etc will be disabled.");
+
 			ShakeEventMode = Config.Bind("Events", "Shake Mode", ShakeType.Original, "Original is for the original shake method, while Catalyst is for the new shake method.");
 
 			Config.SettingChanged += new EventHandler<SettingChangedEventArgs>(UpdateSettings);
 
-			ModCompatibility.sharedFunctions.Add("EventsCoreEditorOffset", AllowCameraEvent.Value);
+			ModCompatibility.sharedFunctions.Add("EventsCoreEditorOffset", EditorCamEnabled.Value);
 
 			if (!ModCompatibility.mods.ContainsKey("EventsCore"))
             {
@@ -103,7 +107,7 @@ namespace EventsCore
 		void Update()
         {
 			if (Input.GetKeyDown(EditorCamToggle.Value) && !LSHelpers.IsUsingInputField())
-				AllowCameraEvent.Value = !AllowCameraEvent.Value;
+				EditorCamEnabled.Value = !EditorCamEnabled.Value;
 
 			if (Input.GetKeyDown(ShowGUIToggle.Value) && !LSHelpers.IsUsingInputField())
 				ShowGUI.Value = !ShowGUI.Value;
@@ -112,9 +116,9 @@ namespace EventsCore
 		static void UpdateSettings(object sender, EventArgs e)
         {
 			if (ModCompatibility.sharedFunctions.ContainsKey("EventsCoreEditorOffset"))
-				ModCompatibility.sharedFunctions["EventsCoreEditorOffset"] = AllowCameraEvent.Value;
+				ModCompatibility.sharedFunctions["EventsCoreEditorOffset"] = EditorCamEnabled.Value;
 			else
-				ModCompatibility.sharedFunctions.Add("EventsCoreEditorOffset", AllowCameraEvent.Value);
+				ModCompatibility.sharedFunctions.Add("EventsCoreEditorOffset", EditorCamEnabled.Value);
 
 			if (EventManager.inst)
 				EventManager.inst.updateEvents();
@@ -149,11 +153,8 @@ namespace EventsCore
 		[HarmonyPrefix]
 		static bool SetPitchPrefix(AudioManager __instance, float __0)
 		{
-			Debug.LogFormat("{0}Set Pitch : {1}", className, __0);
 			if (RTEventManager.inst != null)
-			{
 				RTEventManager.inst.pitchOffset = __0;
-			}
 			else
 				__instance.pitch = __0;
 

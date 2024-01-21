@@ -97,7 +97,7 @@ namespace EventsCore
 
         void SpeedHandler()
         {
-            if (EventsCorePlugin.AllowCameraEvent.Value)
+            if (EventsCorePlugin.EditorCamEnabled.Value)
             {
                 if (!LSHelpers.IsUsingInputField())
                 {
@@ -124,6 +124,15 @@ namespace EventsCore
                     {
                         editorOffset.y -= 0.1f * EditorSpeed * multiply;
                     }
+
+                    //float x = InputDataManager.inst.menuActions.Move.Vector.x;
+                    //float y = InputDataManager.inst.menuActions.Move.Vector.y;
+
+                    //var vector = new Vector3(x, y, 0f);
+                    //if (vector.magnitude > 1f)
+                    //    vector = vector.normalized;
+                    //editorOffset.x += vector.x;
+                    //editorOffset.y += vector.y;
 
                     if (Input.GetKey(KeyCode.KeypadPlus) || Input.GetKey(KeyCode.Plus))
                         editorZoom += 0.1f * EditorSpeed * multiply;
@@ -312,6 +321,10 @@ namespace EventsCore
 
         float Lerp(float x, float y, float t) => x + (y - x) * t;
 
+        public float fieldOfView = 50f;
+
+        public float camPerspectiveOffset = 10f;
+
         void Update()
         {
             SpeedHandler(); updateShake(); FunctionsHandler();
@@ -377,68 +390,76 @@ namespace EventsCore
                 if (float.IsNaN(EventManager.inst.camZoom) || EventManager.inst.camZoom == 0f)
                     EventManager.inst.camZoom = 20f;
 
-                if (!EventsCorePlugin.AllowCameraEvent.Value)
+                if (!EventsCorePlugin.EditorCamEnabled.Value)
                     EventManager.inst.cam.orthographicSize = EventManager.inst.camZoom;
                 else if (EditorSpeed != 0f)
                     EventManager.inst.cam.orthographicSize = editorZoom;
 
-                if (!float.IsNaN(EventManager.inst.camRot) && !EventsCorePlugin.AllowCameraEvent.Value)
+                if (!float.IsNaN(EventManager.inst.camRot) && !EventsCorePlugin.EditorCamEnabled.Value)
                     EventManager.inst.camParent.transform.rotation = Quaternion.Euler(new Vector3(EventManager.inst.camParent.transform.rotation.x, EventManager.inst.camParent.transform.rotation.y, EventManager.inst.camRot));
                 else if (!float.IsNaN(editorRotate))
                     EventManager.inst.camParent.transform.rotation = Quaternion.Euler(new Vector3(editorPerRotate.x, editorPerRotate.y, editorRotate));
 
-                if (EditorManager.inst == null || !EventsCorePlugin.AllowCameraEvent.Value)
+                if (EditorManager.inst == null || !EventsCorePlugin.EditorCamEnabled.Value)
                     EventManager.inst.camParentTop.transform.localPosition = new Vector3(EventManager.inst.camPos.x, EventManager.inst.camPos.y, -10f);
                 else
                     EventManager.inst.camParentTop.transform.localPosition = new Vector3(editorOffset.x, editorOffset.y, -10f);
 
-                EventManager.inst.camPer.fieldOfView = 50f;
+                EventManager.inst.camPer.fieldOfView = fieldOfView;
 
-                if (!EventsCorePlugin.AllowCameraEvent.Value)
+                if (!EventsCorePlugin.EditorCamEnabled.Value)
                     EventManager.inst.camPer.transform.position = new Vector3(EventManager.inst.camPer.transform.position.x, EventManager.inst.camPer.transform.position.y, -(EventManager.inst.camZoom) / RTHelpers.perspectiveZoom);
                 else
                     EventManager.inst.camPer.transform.position = new Vector3(EventManager.inst.camPer.transform.position.x, EventManager.inst.camPer.transform.position.y, -editorZoom / RTHelpers.perspectiveZoom);
 
-                EventManager.inst.camPer.nearClipPlane = -EventManager.inst.camPer.transform.position.z + 10f;
+                EventManager.inst.camPer.nearClipPlane = -EventManager.inst.camPer.transform.position.z + camPerspectiveOffset;
 
                 #endregion
 
                 #region Updates
 
+                bool allowFX = EventsCorePlugin.ShowFX.Value;
+
                 if (!float.IsNaN(EventManager.inst.camChroma))
-                    LSEffectsManager.inst.UpdateChroma(EventManager.inst.camChroma);
+                    LSEffectsManager.inst.UpdateChroma(!allowFX ? 0f : EventManager.inst.camChroma);
                 if (!float.IsNaN(EventManager.inst.camBloom))
-                    LSEffectsManager.inst.UpdateBloom(EventManager.inst.camBloom);
+                    LSEffectsManager.inst.UpdateBloom(!allowFX ? 0f : EventManager.inst.camBloom);
                 if (!float.IsNaN(EventManager.inst.vignetteIntensity))
-                    LSEffectsManager.inst.UpdateVignette(EventManager.inst.vignetteIntensity, EventManager.inst.vignetteSmoothness, Mathf.RoundToInt(EventManager.inst.vignetteRounded) == 1, EventManager.inst.vignetteRoundness, EventManager.inst.vignetteCenter);
+                    LSEffectsManager.inst.UpdateVignette(!allowFX ? 0f : EventManager.inst.vignetteIntensity, EventManager.inst.vignetteSmoothness, Mathf.RoundToInt(EventManager.inst.vignetteRounded) == 1, EventManager.inst.vignetteRoundness, EventManager.inst.vignetteCenter);
                 if (!float.IsNaN(EventManager.inst.lensDistortIntensity))
-                    LSEffectsManager.inst.UpdateLensDistort(EventManager.inst.lensDistortIntensity + offsets[8][0]);
+                    LSEffectsManager.inst.UpdateLensDistort(!allowFX ? 0f : EventManager.inst.lensDistortIntensity);
                 if (!float.IsNaN(EventManager.inst.grainIntensity))
-                    LSEffectsManager.inst.UpdateGrain(EventManager.inst.grainIntensity, Mathf.RoundToInt(EventManager.inst.grainColored) == 1, EventManager.inst.grainSize);
+                    LSEffectsManager.inst.UpdateGrain(!allowFX ? 0f : EventManager.inst.grainIntensity, Mathf.RoundToInt(EventManager.inst.grainColored) == 1, EventManager.inst.grainSize);
                 if (!float.IsNaN(pixel))
-                    LSEffectsManager.inst.pixelize.amount.Override(pixel);
+                    LSEffectsManager.inst.pixelize.amount.Override(!allowFX ? 0f : pixel);
 
                 //New effects
                 if (!float.IsNaN(colorGradingHueShift))
-                    RTEffectsManager.inst.UpdateColorGrading(colorGradingHueShift, colorGradingContrast, colorGradingGamma, colorGradingSaturation, colorGradingTemperature, colorGradingTint);
+                    RTEffectsManager.inst.UpdateColorGrading(
+                        !allowFX ? 0f : colorGradingHueShift,
+                        !allowFX ? 0f : colorGradingContrast,
+                        !allowFX ? Vector4.zero : colorGradingGamma,
+                        !allowFX ? 0f : colorGradingSaturation,
+                        !allowFX ? 0f : colorGradingTemperature,
+                        !allowFX ? 0f : colorGradingTint);
                 if (!float.IsNaN(gradientIntensity))
-                    RTEffectsManager.inst.UpdateGradient(gradientIntensity, gradientRotation);
+                    RTEffectsManager.inst.UpdateGradient(!allowFX ? 0f : gradientIntensity, gradientRotation);
                 if (!float.IsNaN(ripplesStrength))
-                    RTEffectsManager.inst.UpdateRipples(ripplesStrength, ripplesSpeed, ripplesDistance, ripplesHeight, ripplesWidth);
+                    RTEffectsManager.inst.UpdateRipples(!allowFX ? 0f : ripplesStrength, ripplesSpeed, ripplesDistance, ripplesHeight, ripplesWidth);
                 if (!float.IsNaN(doubleVision))
-                    RTEffectsManager.inst.UpdateDoubleVision(doubleVision);
+                    RTEffectsManager.inst.UpdateDoubleVision(!allowFX ? 0f : doubleVision);
                 if (!float.IsNaN(radialBlurIntensity))
-                    RTEffectsManager.inst.UpdateRadialBlur(radialBlurIntensity, radialBlurIterations);
+                    RTEffectsManager.inst.UpdateRadialBlur(!allowFX ? 0f : radialBlurIntensity, radialBlurIterations);
                 if (!float.IsNaN(scanLinesIntensity))
-                    RTEffectsManager.inst.UpdateScanlines(scanLinesIntensity, scanLinesAmount, scanLinesSpeed);
+                    RTEffectsManager.inst.UpdateScanlines(!allowFX ? 0f : scanLinesIntensity, scanLinesAmount, scanLinesSpeed);
                 if (!float.IsNaN(sharpen))
-                    RTEffectsManager.inst.UpdateSharpen(sharpen);
+                    RTEffectsManager.inst.UpdateSharpen(!allowFX ? 0f : sharpen);
                 if (!float.IsNaN(colorSplitOffset))
-                    RTEffectsManager.inst.UpdateColorSplit(colorSplitOffset);
+                    RTEffectsManager.inst.UpdateColorSplit(!allowFX ? 0f : colorSplitOffset);
                 if (!float.IsNaN(dangerIntensity))
-                    RTEffectsManager.inst.UpdateDanger(dangerIntensity, dangerColor, dangerSize);
+                    RTEffectsManager.inst.UpdateDanger(!allowFX ? 0f : dangerIntensity, dangerColor, dangerSize);
                 if (!float.IsNaN(invertAmount))
-                    RTEffectsManager.inst.UpdateInvert(invertAmount);
+                    RTEffectsManager.inst.UpdateInvert(!allowFX ? 0f : invertAmount);
 
                 if (!float.IsNaN(timelineRot))
                 {
@@ -794,11 +815,6 @@ namespace EventsCore
 
         public void updateEvents(int currentEvent)
         {
-            Debug.LogFormat("{0}UPDATING EVENT [{1}]", new object[]
-            {
-                "EVENT MANAGER\n",
-                currentEvent
-            });
             SetupShake();
             EventManager.inst.eventSequence.Kill();
             EventManager.inst.shakeSequence.Kill();
@@ -817,7 +833,6 @@ namespace EventsCore
 
         public IEnumerator updateEvents()
         {
-            Debug.LogFormat("{0}Updating events", EventsCorePlugin.className);
             SetupShake();
             EventManager.inst.eventSequence.Kill();
             EventManager.inst.shakeSequence.Kill();
@@ -1033,7 +1048,7 @@ namespace EventsCore
         public static void updateCameraScanLinesSpeed(float x) => inst.scanLinesSpeed = x;
 
         // 18 - 0
-        public static void updateCameraBlurAmount(float x) => LSEffectsManager.inst.blur.amount.Override(x);
+        public static void updateCameraBlurAmount(float x) => LSEffectsManager.inst.blur.amount.Override(!EventsCorePlugin.ShowFX.Value ? 0f : x);
 
         // 18 - 1
         public static void updateCameraBlurIterations(float x) => LSEffectsManager.inst.blur.iterations.Override(Mathf.Clamp((int)x, 1, 30));
@@ -1279,7 +1294,7 @@ namespace EventsCore
         {
             get
             {
-                return EventsCorePlugin.EditorSpeed.Value;
+                return EventsCorePlugin.EditorCamSpeed.Value;
             }
         }
 
