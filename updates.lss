@@ -1,3 +1,6 @@
+1.5.6 > [Jan 23, 2023]
+- Added Show Effects config, allowing you to turn off effects if it hurts your eyes or you want to focus on gameplay.
+- Preparing for Video BG keyframes.
 1.5.5 > [Jan 6, 2024]
 - Fixed Event Offsets so they properly reset when loading another level.
 1.5.4 > [Dec 23, 2023]
