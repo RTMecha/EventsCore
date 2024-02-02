@@ -50,6 +50,10 @@ namespace EventsCore
 
 		public static ConfigEntry<KeyCode> EditorCamToggle { get; set; }
 
+		public static ConfigEntry<bool> EditorCamUseKeys { get; set; }
+		public static ConfigEntry<float> EditorCamSlowSpeed { get; set; }
+		public static ConfigEntry<float> EditorCamFastSpeed { get; set; }
+
 		public static ConfigEntry<bool> ShowGUI { get; set; }
 
 		public static ConfigEntry<KeyCode> ShowGUIToggle { get; set; }
@@ -77,6 +81,8 @@ namespace EventsCore
 			EditorCamEnabled = Config.Bind("Camera", "Editor Camera Offset", false, "Enabling this will disable all regular Camera events (move, zoom, etc) and allow you to move the camera around freely. WASD to move, + and - to zoom and numpad 4 / numpad 6 to rotate.");
 			EditorCamSpeed = Config.Bind("Camera", "Editor Camera Speed", 1f, "How fast the editor camera moves");
 			EditorCamToggle = Config.Bind("Camera", "Editor Camera Toggle Key", KeyCode.F2, "Press this key to toggle the Editor Camera on or off.");
+			EditorCamSlowSpeed = Config.Bind("Camera", "Editor Camera Slow Speed", 0.5f, "How slow the editor camera is when left trigger is held.");
+			EditorCamFastSpeed = Config.Bind("Camera", "Editor Camera Fast Speed", 2f, "How fast the editor camera is when right trigger is held.");
 
 			ShowGUI = Config.Bind("Game", "Players & GUI Active", true, "Sets the players and GUI elements active / inactive.");
 			ShowGUIToggle = Config.Bind("Game", "Players & GUI Toggle Key", KeyCode.F9, "Press this key to toggle the players / GUI on or off.");
@@ -86,6 +92,8 @@ namespace EventsCore
 			ShowFX = Config.Bind("Events", "Show Effects", true, "If disabled, effects like chroma, bloom, etc will be disabled.");
 
 			ShakeEventMode = Config.Bind("Events", "Shake Mode", ShakeType.Original, "Original is for the original shake method, while Catalyst is for the new shake method.");
+
+			EditorCamUseKeys = Config.Bind("Camera", "Editor Camera Use Keys", true, "If the editor camera should use your keyboard or not.");
 
 			Config.SettingChanged += new EventHandler<SettingChangedEventArgs>(UpdateSettings);
 
@@ -232,14 +240,22 @@ namespace EventsCore
 		static void UpdateThemePrefix(GameManager __instance)
 		{
 			var beatmapTheme = RTHelpers.BeatmapTheme;
-			GameStorageManager.inst.perspectiveCam.backgroundColor = bgColorToLerp;
 
 			RTFunctions.Patchers.BackgroundManagerPatch.bgColorToLerp = bgColorToLerp;
 
-			var componentsInChildren = __instance.timeline.GetComponentsInChildren<Image>();
-			for (int i = 0; i < componentsInChildren.Length; i++)
+			if (GameStorageManager.inst)
 			{
-				componentsInChildren[i].color = timelineColorToLerp;
+				GameStorageManager.inst.perspectiveCam.backgroundColor = bgColorToLerp;
+				if (GameStorageManager.inst.checkpointImages.Count > 0)
+					foreach (var image in GameStorageManager.inst.checkpointImages)
+					{
+						image.color = timelineColorToLerp;
+					}
+
+				GameStorageManager.inst.timelinePlayer.color = timelineColorToLerp;
+				GameStorageManager.inst.timelineLeftCap.color = timelineColorToLerp;
+				GameStorageManager.inst.timelineRightCap.color = timelineColorToLerp;
+				GameStorageManager.inst.timelineLine.color = timelineColorToLerp;
 			}
 
 			if (EditorManager.inst == null && AudioManager.inst.CurrentAudioSource.time < 15f)
@@ -256,7 +272,8 @@ namespace EventsCore
 					image.color = timelineColorToLerp;
 				}
 			}
-			TextMeshProUGUI[] componentsInChildren2 = __instance.menuUI.GetComponentsInChildren<TextMeshProUGUI>();
+
+			var componentsInChildren2 = __instance.menuUI.GetComponentsInChildren<TextMeshProUGUI>();
 			for (int i = 0; i < componentsInChildren2.Length; i++)
 			{
 				componentsInChildren2[i].color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(bgColorToLerp));

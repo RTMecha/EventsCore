@@ -33,6 +33,8 @@ namespace EventsCore
 
         public static RTEventManager inst;
 
+        public EditorCameraController editorCamera;
+
         void Awake()
         {
             if (inst == null)
@@ -46,6 +48,8 @@ namespace EventsCore
                 ModCompatibility.sharedFunctions.Add("EventsCoreResetOffsets", (Action)Reset);
             else
                 ModCompatibility.sharedFunctions["EventsCoreResetOffsets"] = (Action)Reset;
+
+            editorCamera = EditorCameraController.Bind();
         }
 
         public void Reset()
@@ -97,9 +101,61 @@ namespace EventsCore
 
         void SpeedHandler()
         {
+            if (editorCamera.Activate.WasPressed)
+                EventsCorePlugin.EditorCamEnabled.Value = !EventsCorePlugin.EditorCamEnabled.Value;
+
             if (EventsCorePlugin.EditorCamEnabled.Value)
             {
-                if (!LSHelpers.IsUsingInputField())
+                // Editor Camera Controller
+                {
+                    float multiply = 1f;
+
+                    if (editorCamera.SlowDown.IsPressed)
+                        multiply = EventsCorePlugin.EditorCamSlowSpeed.Value;
+                    if (editorCamera.SpeedUp.IsPressed)
+                        multiply = EventsCorePlugin.EditorCamFastSpeed.Value;
+
+                    float x = editorCamera.Move.Vector.x;
+                    float y = editorCamera.Move.Vector.y;
+
+                    var vector = new Vector3(x * EditorSpeed * multiply, y * EditorSpeed * multiply, 0f);
+                    if (vector.magnitude > 1f)
+                        vector = vector.normalized;
+
+                    editorOffset.x += vector.x;
+                    editorOffset.y += vector.y;
+
+                    if (editorCamera.ZoomOut.IsPressed)
+                        editorZoom += 0.5f * EditorSpeed * multiply;
+                    if (editorCamera.ZoomIn.IsPressed)
+                        editorZoom -= 0.5f * EditorSpeed * multiply;
+
+                    if (editorCamera.RotateAdd.IsPressed)
+                        editorRotate += 0.1f * EditorSpeed * multiply;
+                    if (editorCamera.RotateSub.IsPressed)
+                        editorRotate -= 0.1f * EditorSpeed * multiply;
+
+                    var xRot = editorCamera.Rotate.Vector.x;
+                    var yRot = editorCamera.Rotate.Vector.y;
+                    var vectorRot = new Vector3(xRot * EditorSpeed * multiply, yRot * EditorSpeed * multiply, 0f);
+                    if (vectorRot.magnitude > 1f)
+                        vectorRot = vectorRot.normalized;
+
+                    editorPerRotate.x += vectorRot.x;
+                    editorPerRotate.y += vectorRot.y;
+
+                    if (editorCamera.ResetOffsets.WasPressed)
+                    {
+                        editorOffset = EventManager.inst.camPos;
+                        if (!float.IsNaN(EventManager.inst.camZoom))
+                            editorZoom = EventManager.inst.camZoom;
+                        if (!float.IsNaN(EventManager.inst.camRot))
+                            editorRotate = EventManager.inst.camRot;
+                        editorPerRotate = Vector2.zero;
+                    }
+                }
+
+                if (!LSHelpers.IsUsingInputField() && EventsCorePlugin.EditorCamUseKeys.Value)
                 {
                     float multiply = 1f;
 
@@ -125,19 +181,10 @@ namespace EventsCore
                         editorOffset.y -= 0.1f * EditorSpeed * multiply;
                     }
 
-                    //float x = InputDataManager.inst.menuActions.Move.Vector.x;
-                    //float y = InputDataManager.inst.menuActions.Move.Vector.y;
-
-                    //var vector = new Vector3(x, y, 0f);
-                    //if (vector.magnitude > 1f)
-                    //    vector = vector.normalized;
-                    //editorOffset.x += vector.x;
-                    //editorOffset.y += vector.y;
-
                     if (Input.GetKey(KeyCode.KeypadPlus) || Input.GetKey(KeyCode.Plus))
-                        editorZoom += 0.1f * EditorSpeed * multiply;
+                        editorZoom += 0.5f * EditorSpeed * multiply;
                     if (Input.GetKey(KeyCode.KeypadMinus) || Input.GetKey(KeyCode.Minus))
-                        editorZoom -= 0.1f * EditorSpeed * multiply;
+                        editorZoom -= 0.5f * EditorSpeed * multiply;
 
                     if (Input.GetKey(KeyCode.Keypad4))
                         editorRotate += 0.1f * EditorSpeed * multiply;
