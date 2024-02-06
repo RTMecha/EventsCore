@@ -1,5 +1,7 @@
+1.5.8 > [Feb 7, 2024]
+- Fixed a bug with Editor Camera working in the arcade.
 1.5.7 > [Feb 3, 2024]
-- Added Controller support to editor camera.
+- Added Controller support to Editor Camera.
 1.5.6 > [Jan 23, 2023]
 - Added Show Effects config, allowing you to turn off effects if it hurts your eyes or you want to focus on gameplay.
 - Preparing for Video BG keyframes.
