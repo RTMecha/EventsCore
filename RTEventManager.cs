@@ -101,6 +101,9 @@ namespace EventsCore
 
         void SpeedHandler()
         {
+            if (!EditorManager.inst)
+                return;
+
             if (editorCamera.Activate.WasPressed)
                 EventsCorePlugin.EditorCamEnabled.Value = !EventsCorePlugin.EditorCamEnabled.Value;
 
