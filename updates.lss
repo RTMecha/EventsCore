@@ -1,3 +1,7 @@
+1.6.0 > [Feb 8, 2024]
+- Fixed a bug with the clip plane of the camera being far enough for objects to clip through.
+- Added Video BG Parent, Video BG, Sharpen, Bars, Danger, 3D Rotation and Camera Depth Event Keyframe types.
+- Reordered some code around and removed some unused functions.
 1.5.8 > [Feb 7, 2024]
 - Fixed a bug with Editor Camera working in the arcade.
 1.5.7 > [Feb 3, 2024]
