@@ -213,9 +213,10 @@ namespace EventsCore
 			analogGlitch.horizontalShake = _horizontalShake;
         }
 
-		public void UpdateBlackBars(float _size)
+		public void UpdateBlackBars(float _size, float _mode)
         {
 			blackBars.size.Override(_size);
+			blackBars.mode.Override((SCPE.BlackBars.Direction)(int)_mode);
         }
 
 		public void UpdateColorSplit(float _offset)
