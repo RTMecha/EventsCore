@@ -1,3 +1,5 @@
+1.6.1 > [Feb 18, 2024]
+- Implemented relative Event Keyframe values.
 1.6.0 > [Feb 8, 2024]
 - Fixed a bug with the clip plane of the camera being far enough for objects to clip through.
 - Added Video BG Parent, Video BG, Sharpen, Bars, Danger, 3D Rotation and Camera Depth Event Keyframe types.
