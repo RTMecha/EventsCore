@@ -274,8 +274,8 @@ namespace EventsCore
                     if (prevKFIndex < 0)
                         prevKFIndex = 0;
 
-                    var nextKF = list[nextKFIndex];
-                    var prevKF = list[prevKFIndex];
+                    var nextKF = list[nextKFIndex] as EventKeyframe;
+                    var prevKF = list[prevKFIndex] as EventKeyframe;
 
                     if (events.Length > i)
                     {
@@ -283,12 +283,25 @@ namespace EventsCore
                         {
                             if (events[i].Length > j && prevKF.eventValues.Length > j && events[i][j] != null)
                             {
-                                //var total = 0f;
-                                //for (int k = 0; k < nextKFIndex; k++)
-                                //    total += allEvents[i][k].eventValues[j];
+                                var total = 0f;
+                                var prevtotal = 0f;
+                                for (int k = 0; k < nextKFIndex; k++)
+                                {
+                                    if (((EventKeyframe)allEvents[i][k + 1]).relative)
+                                        total += allEvents[i][k].eventValues[j];
+                                    else
+                                        total = 0f;
 
-                                var next = nextKF.eventValues[j];
-                                var prev = prevKF.eventValues[j];
+                                    if (((EventKeyframe)allEvents[i][k]).relative)
+                                        prevtotal += allEvents[i][k].eventValues[j];
+                                    else
+                                        prevtotal = 0f;
+                                }
+
+                                var next = nextKF.relative ? total + nextKF.eventValues[j] : nextKF.eventValues[j];
+                                var prev = prevKF.relative || nextKF.relative ? prevtotal : prevKF.eventValues[j];
+                                //var next = nextKF.eventValues[j];
+                                //var prev = prevKF.eventValues[j];
 
                                 bool notLerper = i == 4 || i == 6 && j == 4 || i == 7 && j == 6 || i == 15 && (j == 2 || j == 3) || i == 20 || i == 22 && j == 6;
 
@@ -318,12 +331,6 @@ namespace EventsCore
 
                                 events[i][j](x + offset);
                             }
-
-                            // Figure out how to make the camera shake AND have a smoothness value.
-                            //if (i == 3)
-                            //{
-                            //
-                            //}    
                         }
                     }
                 }
@@ -335,6 +342,15 @@ namespace EventsCore
                         {
                             if (events[i].Length > j && events[i][j] != null)
                             {
+                                var total = 0f;
+                                for (int k = 0; k < list.Count - 1; k++)
+                                {
+                                    if (((EventKeyframe)allEvents[i][k + 1]).relative)
+                                        total += allEvents[i][k].eventValues[j];
+                                    else
+                                        total = 0f;
+                                }
+
                                 bool notLerper = i == 4 || i == 6 && j == 4 || i == 7 && j == 6 || i == 15 && (j == 2 || j == 3) || i == 20 || i == 22 && j == 6;
 
                                 var x = list[list.Count - 1].eventValues[j];
@@ -355,7 +371,7 @@ namespace EventsCore
                                 if (float.IsNaN(x) || float.IsInfinity(x))
                                     x = allEvents[i][allEvents[i].Count - 1].eventValues[j];
 
-                                events[i][j](x + offset);
+                                events[i][j](x + offset + total);
                             }
 
                             // Figure out how to make the camera shake AND have a smoothness value.
@@ -1590,6 +1606,9 @@ namespace EventsCore
                 {
                     0f, // Gradient Intensity
                     0f, // Gradient Rotation
+                    0f, // Gradient Color Top
+                    0f, // Gradient Color Bottom
+                    0f, // Gradient Mode
                 },
                 new List<float>
                 {
@@ -1808,6 +1827,9 @@ namespace EventsCore
             {
                 0f, // Gradient Intensity
                 0f, // Gradient Rotation
+                0f, // Gradient Color Top
+                0f, // Gradient Color Bottom
+                0f, // Gradient Mode
             },
             new List<float>
             {
