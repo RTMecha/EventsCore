@@ -300,8 +300,6 @@ namespace EventsCore
 
                                 var next = nextKF.relative ? total + nextKF.eventValues[j] : nextKF.eventValues[j];
                                 var prev = prevKF.relative || nextKF.relative ? prevtotal : prevKF.eventValues[j];
-                                //var next = nextKF.eventValues[j];
-                                //var prev = prevKF.eventValues[j];
 
                                 bool notLerper = i == 4 || i == 6 && j == 4 || i == 7 && j == 6 || i == 15 && (j == 2 || j == 3) || i == 20 || i == 22 && j == 6;
 
@@ -872,16 +870,16 @@ namespace EventsCore
 
         public void LerpGradientColor1()
         {
-            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor1 && prevGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor1] : new Color(0f, 0.8f, 0.56f, 0.5f);
-            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor1 && nextGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor1] : new Color(0f, 0.8f, 0.56f, 0.5f);
+            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor1 && prevGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor1] : prevGradientColor1 == 19 ? Color.black : new Color(0f, 0.8f, 0.56f, 0.5f);
+            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor1 && nextGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor1] : nextGradientColor1 == 19 ? Color.black : new Color(0f, 0.8f, 0.56f, 0.5f);
 
             RTEffectsManager.inst.gradient.color1.Override(Color.Lerp(previous, next, gradientColor1));
         }
 
         public void LerpGradientColor2()
         {
-            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor2 && prevGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor2] : new Color(0.81f, 0.37f, 1f, 0.5f);
-            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor2 && nextGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor2] : new Color(0.81f, 0.37f, 1f, 0.5f);
+            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor2 && prevGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor2] : prevGradientColor2 == 19 ? Color.black : new Color(0.81f, 0.37f, 1f, 0.5f);
+            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor2 && nextGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor2] : nextGradientColor2 == 19 ? Color.black : new Color(0.81f, 0.37f, 1f, 0.5f);
 
             RTEffectsManager.inst.gradient.color2.Override(Color.Lerp(previous, next, gradientColor2));
         }
@@ -1277,6 +1275,9 @@ namespace EventsCore
         // 23 - 4
         public static void updatePlayerRotation(float x) => inst.playerRotation = x;
 
+        // 23 - 5
+        public static void updatePlayerOoB(float x) => RTFunctions.Functions.Components.Player.RTPlayer.OutOfBounds = x == 1f;
+
         // 24 - 0
         public static void updateDelayTrackerActive(float x) => inst.delayTracker.active = (int)x == 1;
 
@@ -1653,6 +1654,7 @@ namespace EventsCore
                     0f, // Player Moveable
                     0f, // Player Velocity
                     0f, // Player Rotation
+                    0f, // Player OoB
                 },
                 new List<float>
                 {
@@ -1874,6 +1876,7 @@ namespace EventsCore
                 0f, // Player Moveable
                 0f, // Player Velocity
                 0f, // Player Rotation
+                0f, // Player OoB
             },
             new List<float>
             {
@@ -2100,7 +2103,8 @@ namespace EventsCore
                 updatePlayerMoveable,
                 updatePlayerPositionX,
                 updatePlayerPositionY,
-                updatePlayerRotation
+                updatePlayerRotation,
+                updatePlayerOoB
             }, // Player
             new KFDelegate[]
             {
