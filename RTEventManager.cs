@@ -99,7 +99,7 @@ namespace EventsCore
             DataManager.inst.gameData.eventObjects.allEvents != null &&
             DataManager.inst.gameData.eventObjects.allEvents.Count > 0;
 
-        void SpeedHandler()
+        void EditorCameraHandler()
         {
             if (!EditorManager.inst)
                 return;
@@ -109,113 +109,102 @@ namespace EventsCore
 
             if (EventsCorePlugin.EditorCamEnabled.Value)
             {
-                // Editor Camera Controller
+                float multiplyController = 1f;
+
+                if (editorCamera.SlowDown.IsPressed)
+                    multiplyController = EventsCorePlugin.EditorCamSlowSpeed.Value;
+                if (editorCamera.SpeedUp.IsPressed)
+                    multiplyController = EventsCorePlugin.EditorCamFastSpeed.Value;
+
+                float x = editorCamera.Move.Vector.x;
+                float y = editorCamera.Move.Vector.y;
+
+                var vector = new Vector3(x * EditorSpeed * multiplyController, y * EditorSpeed * multiplyController, 0f);
+                if (vector.magnitude > 1f)
+                    vector = vector.normalized;
+
+                editorOffset.x += vector.x;
+                editorOffset.y += vector.y;
+
+                if (editorCamera.ZoomOut.IsPressed)
+                    editorZoom += 0.5f * EditorSpeed * multiplyController;
+                if (editorCamera.ZoomIn.IsPressed)
+                    editorZoom -= 0.5f * EditorSpeed * multiplyController;
+
+                if (editorCamera.RotateAdd.IsPressed)
+                    editorRotate += 0.1f * EditorSpeed * multiplyController;
+                if (editorCamera.RotateSub.IsPressed)
+                    editorRotate -= 0.1f * EditorSpeed * multiplyController;
+
+                var xRot = editorCamera.Rotate.Vector.x;
+                var yRot = editorCamera.Rotate.Vector.y;
+                var vectorRot = new Vector3(xRot * EditorSpeed * multiplyController, yRot * EditorSpeed * multiplyController, 0f);
+                if (vectorRot.magnitude > 1f)
+                    vectorRot = vectorRot.normalized;
+
+                editorPerRotate.x += vectorRot.x;
+                editorPerRotate.y += vectorRot.y;
+
+                if (editorCamera.ResetOffsets.WasPressed)
                 {
-                    float multiply = 1f;
-
-                    if (editorCamera.SlowDown.IsPressed)
-                        multiply = EventsCorePlugin.EditorCamSlowSpeed.Value;
-                    if (editorCamera.SpeedUp.IsPressed)
-                        multiply = EventsCorePlugin.EditorCamFastSpeed.Value;
-
-                    float x = editorCamera.Move.Vector.x;
-                    float y = editorCamera.Move.Vector.y;
-
-                    var vector = new Vector3(x * EditorSpeed * multiply, y * EditorSpeed * multiply, 0f);
-                    if (vector.magnitude > 1f)
-                        vector = vector.normalized;
-
-                    editorOffset.x += vector.x;
-                    editorOffset.y += vector.y;
-
-                    if (editorCamera.ZoomOut.IsPressed)
-                        editorZoom += 0.5f * EditorSpeed * multiply;
-                    if (editorCamera.ZoomIn.IsPressed)
-                        editorZoom -= 0.5f * EditorSpeed * multiply;
-
-                    if (editorCamera.RotateAdd.IsPressed)
-                        editorRotate += 0.1f * EditorSpeed * multiply;
-                    if (editorCamera.RotateSub.IsPressed)
-                        editorRotate -= 0.1f * EditorSpeed * multiply;
-
-                    var xRot = editorCamera.Rotate.Vector.x;
-                    var yRot = editorCamera.Rotate.Vector.y;
-                    var vectorRot = new Vector3(xRot * EditorSpeed * multiply, yRot * EditorSpeed * multiply, 0f);
-                    if (vectorRot.magnitude > 1f)
-                        vectorRot = vectorRot.normalized;
-
-                    editorPerRotate.x += vectorRot.x;
-                    editorPerRotate.y += vectorRot.y;
-
-                    if (editorCamera.ResetOffsets.WasPressed)
-                    {
-                        editorOffset = EventManager.inst.camPos;
-                        if (!float.IsNaN(EventManager.inst.camZoom))
-                            editorZoom = EventManager.inst.camZoom;
-                        if (!float.IsNaN(EventManager.inst.camRot))
-                            editorRotate = EventManager.inst.camRot;
-                        editorPerRotate = Vector2.zero;
-                    }
+                    editorOffset = EventManager.inst.camPos;
+                    if (!float.IsNaN(EventManager.inst.camZoom))
+                        editorZoom = EventManager.inst.camZoom;
+                    if (!float.IsNaN(EventManager.inst.camRot))
+                        editorRotate = EventManager.inst.camRot;
+                    editorPerRotate = Vector2.zero;
                 }
 
-                if (!LSHelpers.IsUsingInputField() && EventsCorePlugin.EditorCamUseKeys.Value)
+                if (LSHelpers.IsUsingInputField() || !EventsCorePlugin.EditorCamUseKeys.Value)
+                    return;
+
+                float multiply = 1f;
+
+                if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                    multiply = 0.5f;
+                if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+                    multiply = 2f;
+
+                if (Input.GetKey(KeyCode.A))
+                    editorOffset.x -= 0.1f * EditorSpeed * multiply;
+                if (Input.GetKey(KeyCode.D))
+                    editorOffset.x += 0.1f * EditorSpeed * multiply;
+                if (Input.GetKey(KeyCode.W))
+                    editorOffset.y += 0.1f * EditorSpeed * multiply;
+                if (Input.GetKey(KeyCode.S))
+                    editorOffset.y -= 0.1f * EditorSpeed * multiply;
+
+                if (Input.GetKey(KeyCode.KeypadPlus) || Input.GetKey(KeyCode.Plus))
+                    editorZoom += 0.1f * EditorSpeed * multiply;
+                if (Input.GetKey(KeyCode.KeypadMinus) || Input.GetKey(KeyCode.Minus))
+                    editorZoom -= 0.1f * EditorSpeed * multiply;
+
+                if (Input.GetKey(KeyCode.Keypad4))
+                    editorRotate += 0.1f * EditorSpeed * multiply;
+                if (Input.GetKey(KeyCode.Keypad6))
+                    editorRotate -= 0.1f * EditorSpeed * multiply;
+
+                if (Input.GetKey(KeyCode.LeftArrow))
+                    editorPerRotate.y += 0.1f * EditorSpeed * multiply;
+                if (Input.GetKey(KeyCode.RightArrow))
+                    editorPerRotate.y -= 0.1f * EditorSpeed * multiply;
+
+                if (Input.GetKey(KeyCode.UpArrow))
+                    editorPerRotate.x += 0.1f * EditorSpeed * multiply;
+                if (Input.GetKey(KeyCode.DownArrow))
+                    editorPerRotate.x -= 0.1f * EditorSpeed * multiply;
+
+                if (Input.GetKeyDown(KeyCode.Keypad5))
                 {
-                    float multiply = 1f;
-
-                    if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-                        multiply = 0.5f;
-                    if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
-                        multiply = 2f;
-
-                    if (Input.GetKey(KeyCode.A))
-                    {
-                        editorOffset.x -= 0.1f * EditorSpeed * multiply;
-                    }
-                    if (Input.GetKey(KeyCode.D))
-                    {
-                        editorOffset.x += 0.1f * EditorSpeed * multiply;
-                    }
-                    if (Input.GetKey(KeyCode.W))
-                    {
-                        editorOffset.y += 0.1f * EditorSpeed * multiply;
-                    }
-                    if (Input.GetKey(KeyCode.S))
-                    {
-                        editorOffset.y -= 0.1f * EditorSpeed * multiply;
-                    }
-
-                    if (Input.GetKey(KeyCode.KeypadPlus) || Input.GetKey(KeyCode.Plus))
-                        editorZoom += 0.5f * EditorSpeed * multiply;
-                    if (Input.GetKey(KeyCode.KeypadMinus) || Input.GetKey(KeyCode.Minus))
-                        editorZoom -= 0.5f * EditorSpeed * multiply;
-
-                    if (Input.GetKey(KeyCode.Keypad4))
-                        editorRotate += 0.1f * EditorSpeed * multiply;
-                    if (Input.GetKey(KeyCode.Keypad6))
-                        editorRotate -= 0.1f * EditorSpeed * multiply;
-
-                    if (Input.GetKey(KeyCode.LeftArrow))
-                        editorPerRotate.y += 0.1f * EditorSpeed * multiply;
-                    if (Input.GetKey(KeyCode.RightArrow))
-                        editorPerRotate.y -= 0.1f * EditorSpeed * multiply;
-
-                    if (Input.GetKey(KeyCode.UpArrow))
-                        editorPerRotate.x += 0.1f * EditorSpeed * multiply;
-                    if (Input.GetKey(KeyCode.DownArrow))
-                        editorPerRotate.x -= 0.1f * EditorSpeed * multiply;
-
-                    if (Input.GetKeyDown(KeyCode.Keypad5))
-                    {
-                        editorOffset = EventManager.inst.camPos;
-                        if (!float.IsNaN(EventManager.inst.camZoom))
-                            editorZoom = EventManager.inst.camZoom;
-                        if (!float.IsNaN(EventManager.inst.camRot))
-                            editorRotate = EventManager.inst.camRot;
-                        editorPerRotate = Vector2.zero;
-                    }
+                    editorOffset = EventManager.inst.camPos;
+                    if (!float.IsNaN(EventManager.inst.camZoom))
+                        editorZoom = EventManager.inst.camZoom;
+                    if (!float.IsNaN(EventManager.inst.camRot))
+                        editorRotate = EventManager.inst.camRot;
+                    editorPerRotate = Vector2.zero;
                 }
             }
-            else
+            else if (EventsCorePlugin.EditorCamResetValues.Value)
             {
                 editorOffset = EventManager.inst.camPos;
                 if (!float.IsNaN(EventManager.inst.camZoom))
@@ -301,15 +290,15 @@ namespace EventsCore
                                 var next = nextKF.relative ? total + nextKF.eventValues[j] : nextKF.eventValues[j];
                                 var prev = prevKF.relative || nextKF.relative ? prevtotal : prevKF.eventValues[j];
 
-                                bool notLerper = i == 4 || i == 6 && j == 4 || i == 7 && j == 6 || i == 15 && (j == 2 || j == 3) || i == 20 || i == 22 && j == 6;
+                                bool isLerper = IsLerper(i, j);
 
-                                if (float.IsNaN(prev) || notLerper)
+                                if (float.IsNaN(prev) || !isLerper)
                                     prev = 0f;
 
                                 if (float.IsNaN(next))
                                     next = 0f;
 
-                                if (notLerper)
+                                if (!isLerper)
                                     next = 1f;
 
                                 var x = RTMath.Lerp(prev, next, Ease.GetEaseFunction(nextKF.curveType.Name)(RTMath.InverseLerp(prevKF.eventTime, nextKF.eventTime, time)));
@@ -318,7 +307,7 @@ namespace EventsCore
                                     x = next;
 
                                 float offset = 0f;
-                                if (offsets.Count > i && offsets[i].Count > j && !notLerper)
+                                if (offsets.Count > i && offsets[i].Count > j && isLerper)
                                     offset = offsets[i][j];
 
                                 if (float.IsNaN(offset) || float.IsInfinity(offset))
@@ -349,18 +338,18 @@ namespace EventsCore
                                         total = 0f;
                                 }
 
-                                bool notLerper = i == 4 || i == 6 && j == 4 || i == 7 && j == 6 || i == 15 && (j == 2 || j == 3) || i == 20 || i == 22 && j == 6;
+                                bool isLerper = IsLerper(i, j);
 
                                 var x = list[list.Count - 1].eventValues[j];
 
                                 if (float.IsNaN(x))
                                     x = 0f;
 
-                                if (notLerper)
+                                if (!isLerper)
                                     x = 1f;
 
                                 float offset = 0f;
-                                if (offsets.Count > i && offsets[i].Count > j && !notLerper)
+                                if (offsets.Count > i && offsets[i].Count > j && isLerper)
                                     offset = offsets[i][j];
 
                                 if (float.IsNaN(offset) || float.IsInfinity(offset))
@@ -371,19 +360,14 @@ namespace EventsCore
 
                                 events[i][j](x + offset + total);
                             }
-
-                            // Figure out how to make the camera shake AND have a smoothness value.
-                            //if (i == 3)
-                            //{
-                            //
-                            //}    
                         }
                     }
                 }
             }
         }
 
-        float Lerp(float x, float y, float t) => x + (y - x) * t;
+        bool IsLerper(int i, int j)
+            => !(i == 4 || i == 6 && j == 4 || i == 7 && j == 6 || i == 15 && (j == 2 || j == 3) || i == 20 && j == 0 || i == 22 && j == 6);
 
         public float fieldOfView = 50f;
         public bool setPerspectiveCamClip = false;
@@ -391,7 +375,7 @@ namespace EventsCore
 
         void Update()
         {
-            SpeedHandler(); updateShake(); FunctionsHandler();
+            EditorCameraHandler(); FunctionsHandler();
             GameManager.inst.timeline.SetActive(timelineActive);
 
             if (GameManager.inst.introMain != null && AudioManager.inst.CurrentAudioSource.time < 15f)
@@ -451,6 +435,8 @@ namespace EventsCore
 
                 #region Camera
 
+                updateShake();
+
                 if (float.IsNaN(EventManager.inst.camRot))
                     EventManager.inst.camRot = 0f;
                 if (float.IsNaN(EventManager.inst.camZoom) || EventManager.inst.camZoom == 0f)
@@ -500,15 +486,39 @@ namespace EventsCore
                 if (!float.IsNaN(pixel))
                     LSEffectsManager.inst.pixelize.amount.Override(!allowFX ? 0f : pixel);
 
+                if (float.IsNaN(colorGradingHueShift))
+                {
+                    Debug.LogError($"{EventsCorePlugin.className}ColorGrading Hueshift was not a number!");
+                    colorGradingHueShift = 0f;
+                }
+
+                if (float.IsNaN(colorGradingContrast))
+                {
+                    Debug.LogError($"{EventsCorePlugin.className}ColorGrading Contrast was not a number!");
+                    colorGradingContrast = 0f;
+                }
+
+                if (float.IsNaN(colorGradingSaturation))
+                {
+                    Debug.LogError($"{EventsCorePlugin.className}ColorGrading Saturation was not a number!");
+                    colorGradingSaturation = 0f;
+                }
+
+                if (float.IsNaN(colorGradingTint))
+                {
+                    Debug.LogError($"{EventsCorePlugin.className}ColorGrading Tint was not a number!");
+                    colorGradingTint = 0f;
+                }
+
                 //New effects
-                if (!float.IsNaN(colorGradingHueShift))
-                    RTEffectsManager.inst.UpdateColorGrading(
-                        !allowFX ? 0f : colorGradingHueShift,
-                        !allowFX ? 0f : colorGradingContrast,
-                        !allowFX ? Vector4.zero : colorGradingGamma,
-                        !allowFX ? 0f : colorGradingSaturation,
-                        !allowFX ? 0f : colorGradingTemperature,
-                        !allowFX ? 0f : colorGradingTint);
+                RTEffectsManager.inst.UpdateColorGrading(
+                    !allowFX ? 0f : colorGradingHueShift,
+                    !allowFX ? 0f : colorGradingContrast,
+                    !allowFX ? Vector4.zero : colorGradingGamma,
+                    !allowFX ? 0f : colorGradingSaturation,
+                    !allowFX ? 0f : colorGradingTemperature,
+                    !allowFX ? 0f : colorGradingTint);
+
                 if (!float.IsNaN(gradientIntensity))
                     RTEffectsManager.inst.UpdateGradient(!allowFX ? 0f : gradientIntensity, gradientRotation);
                 if (!float.IsNaN(ripplesStrength))
@@ -1185,6 +1195,18 @@ namespace EventsCore
         // 20 - 0
         public static void updateCameraBGColor(float x) => inst.bgColor = x;
 
+        // 20 - 1
+        public static void updateCameraBGActive(float x)
+        {
+            inst.bgActive = x;
+
+            var i = (int)x;
+
+            BackgroundManager.inst?.backgroundParent?.gameObject?.SetActive(i == 0);
+        }
+
+        public float bgActive = 0f;
+
         // 21 - 0
         public static void updateCameraInvert(float x) => inst.invertAmount = x;
 
@@ -1633,6 +1655,7 @@ namespace EventsCore
                 new List<float>
                 {
                     0f, // BG Color
+                    0f, // BG Active
                 },
                 new List<float>
                 {
@@ -1855,6 +1878,7 @@ namespace EventsCore
             new List<float>
             {
                 0f, // BG Color
+                0f, // BG Active
             },
             new List<float>
             {
@@ -2081,7 +2105,8 @@ namespace EventsCore
             }, // Pixelize
             new KFDelegate[]
             {
-                updateCameraBGColor
+                updateCameraBGColor,
+                updateCameraBGActive
             }, // BG
             new KFDelegate[]
             {
@@ -2118,7 +2143,7 @@ namespace EventsCore
                 updateDelayTrackerLimitUp,
                 updateDelayTrackerLimitDown,
                 updateDelayTrackerAnchor,
-            },// Camera Follows Player
+            }, // Camera Follows Player
             new KFDelegate[]
             {
                 updateAudioPitch,
