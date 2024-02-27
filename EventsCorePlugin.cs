@@ -45,6 +45,7 @@ namespace EventsCore
         #region Configs
 
         public static ConfigEntry<bool> EditorCamEnabled { get; set; }
+        public static ConfigEntry<bool> EditorCamResetValues { get; set; }
 
 		public static ConfigEntry<float> EditorCamSpeed { get; set; }
 
@@ -83,17 +84,16 @@ namespace EventsCore
 			EditorCamToggle = Config.Bind("Camera", "Editor Camera Toggle Key", KeyCode.F2, "Press this key to toggle the Editor Camera on or off.");
 			EditorCamSlowSpeed = Config.Bind("Camera", "Editor Camera Slow Speed", 0.5f, "How slow the editor camera is when left trigger is held.");
 			EditorCamFastSpeed = Config.Bind("Camera", "Editor Camera Fast Speed", 2f, "How fast the editor camera is when right trigger is held.");
+			EditorCamUseKeys = Config.Bind("Camera", "Editor Camera Use Keys", true, "If the editor camera should use your keyboard or not.");
+			EditorCamResetValues = Config.Bind("Camera", "Editor Camera Reset Values", true, "If the offset values should reset when the editor camera is disabled.");
 
 			ShowGUI = Config.Bind("Game", "Players & GUI Active", true, "Sets the players and GUI elements active / inactive.");
 			ShowGUIToggle = Config.Bind("Game", "Players & GUI Toggle Key", KeyCode.F9, "Press this key to toggle the players / GUI on or off.");
-
 			ShowIntro = Config.Bind("Game", "Show Intro", true, "Sets whether the Intro GUI is active / inactive.");
 
 			ShowFX = Config.Bind("Events", "Show Effects", true, "If disabled, effects like chroma, bloom, etc will be disabled.");
 
 			ShakeEventMode = Config.Bind("Events", "Shake Mode", ShakeType.Original, "Original is for the original shake method, while Catalyst is for the new shake method.");
-
-			EditorCamUseKeys = Config.Bind("Camera", "Editor Camera Use Keys", true, "If the editor camera should use your keyboard or not.");
 
 			Config.SettingChanged += new EventHandler<SettingChangedEventArgs>(UpdateSettings);
 
@@ -104,6 +104,22 @@ namespace EventsCore
 				var mod = new ModCompatibility.Mod(inst, GetType());
 				ModCompatibility.mods.Add("EventsCore", mod);
             }
+
+			ModCompatibility.sharedFunctions.Add("EventsCoreConfigs", new List<ConfigEntryBase>
+			{
+				EditorCamEnabled,
+				EditorCamSpeed,
+				EditorCamToggle,
+				EditorCamSlowSpeed,
+				EditorCamFastSpeed,
+				EditorCamUseKeys,
+				EditorCamResetValues,
+				ShowGUI,
+				ShowGUIToggle,
+				ShowIntro,
+				ShowFX,
+				ShakeEventMode,
+			});
 
 			RTFunctions.FunctionsPlugin.EventsCoreGameThemePrefix = UpdateThemePrefix;
 			RTFunctions.FunctionsPlugin.EventsCoreUpdateThemePrefix = EventManagerThemePrefix;
