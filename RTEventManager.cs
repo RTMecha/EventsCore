@@ -1027,11 +1027,18 @@ namespace EventsCore
             inst.themeLerp = x;
             var beatmapTheme = BeatmapTheme.DeepCopy((BeatmapTheme)GameManager.inst.LiveTheme);
 
-            ((BeatmapTheme)GameManager.inst.LiveTheme).Lerp((BeatmapTheme)DataManager.inst.GetTheme(EventManager.inst.LastTheme), (BeatmapTheme)DataManager.inst.GetTheme(EventManager.inst.NewTheme), x);
+            ((BeatmapTheme)GameManager.inst.LiveTheme).Lerp((BeatmapTheme)GetTheme(EventManager.inst.LastTheme), (BeatmapTheme)GetTheme(EventManager.inst.NewTheme), x);
 
             if (beatmapTheme != (BeatmapTheme)GameManager.inst.LiveTheme)
                 GameManager.inst.UpdateTheme();
         }
+
+        /// <summary>
+        /// BeatmapTheme finder.
+        /// </summary>
+        /// <param name="id">Finds the BeatmapTheme with the matching ID.</param>
+        /// <returns>The current BeatmapTheme.</returns>
+        static DataManager.BeatmapTheme GetTheme(int id) => DataManager.inst.AllThemes.Find(x => Parser.TryParse(x.id, 0) == id);
 
         // 5 - 0
         public static void updateCameraChromatic(float x) => EventManager.inst.camChroma = x;
