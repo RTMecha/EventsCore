@@ -93,7 +93,7 @@ namespace EventsCore
             RTEffectsManager.inst &&
             EventManager.inst &&
             GameManager.inst &&
-            (GameManager.inst.gameState == GameManager.State.Playing || GameManager.inst.gameState == GameManager.State.Reversing) &&
+            (GameManager.inst.gameState == GameManager.State.Playing || GameManager.inst.gameState == GameManager.State.Reversing || LevelManager.LevelEnded) &&
             DataManager.inst.gameData != null &&
             DataManager.inst.gameData.eventObjects != null &&
             DataManager.inst.gameData.eventObjects.allEvents != null &&
@@ -1278,7 +1278,12 @@ namespace EventsCore
                 zen = true;
             }
 
-            GameManager.inst.players.SetActive(active && !zen || active && EventsCorePlugin.ShowGUI.Value);
+            var a = active && !zen || active && EventsCorePlugin.ShowGUI.Value;
+
+            if (GameManager.inst.gameState == GameManager.State.Paused && LevelManager.LevelEnded)
+                a = false;
+
+            GameManager.inst.players.SetActive(a);
         }
 
         // 23 - 1
