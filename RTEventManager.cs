@@ -1273,14 +1273,14 @@ namespace EventsCore
             }
 
             var zen = false;
-            if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) == 0 || EditorManager.inst != null)
+            if (PlayerManager.IsZenMode || EditorManager.inst != null)
             {
                 zen = true;
             }
 
             var a = active && !zen || active && EventsCorePlugin.ShowGUI.Value;
 
-            if (GameManager.inst.gameState == GameManager.State.Paused && LevelManager.LevelEnded)
+            if (GameManager.inst.gameState == (GameManager.State.Paused | GameManager.State.Finish) && LevelManager.LevelEnded)
                 a = false;
 
             GameManager.inst.players.SetActive(a);
