@@ -1038,7 +1038,7 @@ namespace EventsCore
         /// </summary>
         /// <param name="id">Finds the BeatmapTheme with the matching ID.</param>
         /// <returns>The current BeatmapTheme.</returns>
-        static DataManager.BeatmapTheme GetTheme(int id) => DataManager.inst.AllThemes.Find(x => Parser.TryParse(x.id, 0) == id);
+        static DataManager.BeatmapTheme GetTheme(int id) => DataManager.inst.AllThemes.Has(x => Parser.TryParse(x.id, 0) == id) ? DataManager.inst.AllThemes.Find(x => Parser.TryParse(x.id, 0) == id) : DataManager.inst.AllThemes[0];
 
         // 5 - 0
         public static void updateCameraChromatic(float x) => EventManager.inst.camChroma = x;
