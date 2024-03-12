@@ -26,7 +26,7 @@ using RTFunctions.Functions.Managers;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.6.1")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.6.2")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
@@ -81,7 +81,7 @@ namespace EventsCore
 
 			EditorCamEnabled = Config.Bind("Camera", "Editor Camera Offset", false, "Enabling this will disable all regular Camera events (move, zoom, etc) and allow you to move the camera around freely. WASD to move, + and - to zoom and numpad 4 / numpad 6 to rotate.");
 			EditorCamSpeed = Config.Bind("Camera", "Editor Camera Speed", 1f, "How fast the editor camera moves");
-			EditorCamToggle = Config.Bind("Camera", "Editor Camera Toggle Key", KeyCode.F2, "Press this key to toggle the Editor Camera on or off.");
+			EditorCamToggle = Config.Bind("Camera", "Editor Camera Toggle Key", KeyCode.F3, "Press this key to toggle the Editor Camera on or off.");
 			EditorCamSlowSpeed = Config.Bind("Camera", "Editor Camera Slow Speed", 0.5f, "How slow the editor camera is when left trigger is held.");
 			EditorCamFastSpeed = Config.Bind("Camera", "Editor Camera Fast Speed", 2f, "How fast the editor camera is when right trigger is held.");
 			EditorCamUseKeys = Config.Bind("Camera", "Editor Camera Use Keys", true, "If the editor camera should use your keyboard or not.");
