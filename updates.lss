@@ -1,3 +1,7 @@
+1.6.2 > [Mar 12, 2024]
+- Added Player Can Exit Out of Bounds value to Player Event Keyframes.
+- Added BG Active value to BG Event Keyframes. Turning this off will unrender all Background Objects.
+- Use new update method, possibly allowing for more than 60 fps.
 1.6.1 > [Feb 18, 2024]
 - Implemented relative Event Keyframe values.
 1.6.0 > [Feb 8, 2024]
