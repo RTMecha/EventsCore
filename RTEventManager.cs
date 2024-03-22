@@ -249,14 +249,7 @@ namespace EventsCore
         void Interpolate()
         {
             var allEvents = DataManager.inst.gameData.eventObjects.allEvents;
-            var time = AudioManager.inst.CurrentAudioSource.time;
-
-            if (RTFunctions.Functions.Optimization.Updater.UseNewUpdateMethod)
-            {
-                var currentAudioTime = AudioManager.inst.CurrentAudioSource.time;
-                var smoothedTime = Mathf.SmoothDamp(previousAudioTime, currentAudioTime, ref audioTimeVelocity, 1.0f / 50.0f);
-                time = smoothedTime;
-            }
+            var time = currentTime;
 
             if (shakeSequence != null && shakeSequence.keyframes != null && shakeSequence.keyframes.Length > 0 && EventsCorePlugin.ShakeEventMode.Value == EventsCorePlugin.ShakeType.Catalyst)
                 EventManager.inst.shakeVector = shakeSequence.Interpolate((time * (shakeSpeed < 0.001f ? 1f : shakeSpeed)) % shakeLength);
@@ -385,6 +378,8 @@ namespace EventsCore
         public bool setPerspectiveCamClip = false;
         public float camPerspectiveOffset = 10f;
 
+        float currentTime;
+
         void Update()
         {
             EditorCameraHandler(); FunctionsHandler();
@@ -396,6 +391,15 @@ namespace EventsCore
             if (Playable)
             {
                 InputDataManager.inst.SetAllControllerRumble(EventManager.inst.shakeMultiplier);
+
+                if (RTFunctions.Functions.Optimization.Updater.UseNewUpdateMethod)
+                {
+                    var currentAudioTime = AudioManager.inst.CurrentAudioSource.time;
+                    var smoothedTime = Mathf.SmoothDamp(previousAudioTime, currentAudioTime, ref audioTimeVelocity, 1.0f / 50.0f);
+                    currentTime = smoothedTime;
+                }
+                else
+                    currentTime = AudioManager.inst.CurrentAudioSource.time;
 
                 #region Lerp Colors
 
@@ -600,17 +604,19 @@ namespace EventsCore
         public void FindColors()
         {
             var allEvents = DataManager.inst.gameData.eventObjects.allEvents;
+            var time = currentTime;
 
             if (allEvents[4].Count > 0)
             {
-                if (allEvents[4].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time + 0.0001f) != null)
+                var nextKFIndex = allEvents[4].FindIndex(x => x.eventTime > time + 0.0001f);
+                if (nextKFIndex >= 0)
                 {
-                    var nextKF = allEvents[4].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time + 0.0001f);
-                    if (allEvents[4].IndexOf(nextKF) - 1 > -1)
+                    var nextKF = allEvents[4][nextKFIndex];
+                    if (nextKFIndex - 1 > -1)
                     {
-                        if (allEvents[4][allEvents[4].IndexOf(nextKF) - 1].eventValues.Length > 0)
+                        if (allEvents[4][nextKFIndex - 1].eventValues.Length > 0)
                         {
-                            EventManager.inst.LastTheme = (int)allEvents[4][allEvents[4].IndexOf(nextKF) - 1].eventValues[0];
+                            EventManager.inst.LastTheme = (int)allEvents[4][nextKFIndex - 1].eventValues[0];
                         }
                     }
                     else
@@ -648,14 +654,15 @@ namespace EventsCore
 
             if (allEvents[6].Count > 0)
             {
-                if (allEvents[6].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                var nextKFIndex = allEvents[6].FindIndex(x => x.eventTime > time + 0.0001f);
+                if (nextKFIndex >= 0)
                 {
-                    var nextKF = allEvents[6].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
-                    if (allEvents[6].IndexOf(nextKF) - 1 > -1)
+                    var nextKF = allEvents[6][nextKFIndex];
+                    if (nextKFIndex - 1 > -1)
                     {
-                        if (allEvents[6][allEvents[6].IndexOf(nextKF) - 1].eventValues.Length > 4)
+                        if (allEvents[6][nextKFIndex - 1].eventValues.Length > 4)
                         {
-                            prevBloomColor = (int)allEvents[6][allEvents[6].IndexOf(nextKF) - 1].eventValues[4];
+                            prevBloomColor = (int)allEvents[6][nextKFIndex - 1].eventValues[4];
                         }
                     }
                     else
@@ -693,14 +700,15 @@ namespace EventsCore
 
             if (allEvents[7].Count > 0)
             {
-                if (allEvents[7].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                var nextKFIndex = allEvents[7].FindIndex(x => x.eventTime > time + 0.0001f);
+                if (nextKFIndex >= 0)
                 {
-                    var nextKF = allEvents[7].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
-                    if (allEvents[7].IndexOf(nextKF) - 1 > -1)
+                    var nextKF = allEvents[7][nextKFIndex];
+                    if (nextKFIndex - 1 > -1)
                     {
-                        if (allEvents[7][allEvents[7].IndexOf(nextKF) - 1].eventValues.Length > 6)
+                        if (allEvents[7][nextKFIndex - 1].eventValues.Length > 6)
                         {
-                            prevVignetteColor = (int)allEvents[7][allEvents[7].IndexOf(nextKF) - 1].eventValues[6];
+                            prevVignetteColor = (int)allEvents[7][nextKFIndex - 1].eventValues[6];
                         }
                     }
                     else
@@ -738,15 +746,16 @@ namespace EventsCore
 
             if (allEvents.Count > 15 && allEvents[15].Count > 0)
             {
-                if (allEvents[15].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                var nextKFIndex = allEvents[15].FindIndex(x => x.eventTime > time + 0.0001f);
+                if (nextKFIndex >= 0)
                 {
-                    var nextKF = allEvents[15].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
-                    if (allEvents[15].IndexOf(nextKF) - 1 > -1)
+                    var nextKF = allEvents[15][nextKFIndex];
+                    if (nextKFIndex - 1 > -1)
                     {
-                        if (allEvents[15][allEvents[15].IndexOf(nextKF) - 1].eventValues.Length > 2)
+                        if (allEvents[15][nextKFIndex - 1].eventValues.Length > 2)
                         {
-                            prevGradientColor1 = (int)allEvents[15][allEvents[15].IndexOf(nextKF) - 1].eventValues[2];
-                            prevGradientColor2 = (int)allEvents[15][allEvents[15].IndexOf(nextKF) - 1].eventValues[3];
+                            prevGradientColor1 = (int)allEvents[15][nextKFIndex - 1].eventValues[2];
+                            prevGradientColor2 = (int)allEvents[15][nextKFIndex - 1].eventValues[3];
                         }
                     }
                     else
@@ -788,12 +797,13 @@ namespace EventsCore
 
             if (allEvents.Count > 20 && allEvents[20].Count > 0)
             {
-                if (allEvents[20].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                var nextKFIndex = allEvents[20].FindIndex(x => x.eventTime > time + 0.0001f);
+                if (nextKFIndex >= 0)
                 {
-                    var nextKF = allEvents[20].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
-                    if (allEvents[20].IndexOf(nextKF) - 1 > -1)
+                    var nextKF = allEvents[20][nextKFIndex];
+                    if (nextKFIndex - 1 > -1)
                     {
-                        prevBGColor = (int)allEvents[20][allEvents[20].IndexOf(nextKF) - 1].eventValues[0];
+                        prevBGColor = (int)allEvents[20][nextKFIndex - 1].eventValues[0];
                     }
                     else
                     {
@@ -817,12 +827,13 @@ namespace EventsCore
 
             if (allEvents.Count > 22 && allEvents[22].Count > 0)
             {
-                if (allEvents[22].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                var nextKFIndex = allEvents[22].FindIndex(x => x.eventTime > time + 0.0001f);
+                if (nextKFIndex >= 0)
                 {
-                    var nextKF = allEvents[22].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
-                    if (allEvents[22].IndexOf(nextKF) - 1 > -1)
+                    var nextKF = allEvents[22][nextKFIndex];
+                    if (nextKFIndex - 1 > -1)
                     {
-                        prevTimelineColor = (int)allEvents[22][allEvents[22].IndexOf(nextKF) - 1].eventValues[6];
+                        prevTimelineColor = (int)allEvents[22][nextKFIndex - 1].eventValues[6];
                     }
                     else
                     {
@@ -846,12 +857,13 @@ namespace EventsCore
 
             if (allEvents.Count > 30 && allEvents[30].Count > 0)
             {
-                if (allEvents[30].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time) != null)
+                var nextKFIndex = allEvents[30].FindIndex(x => x.eventTime > time + 0.0001f);
+                if (nextKFIndex >= 0)
                 {
-                    var nextKF = allEvents[30].Find(x => x.eventTime > AudioManager.inst.CurrentAudioSource.time);
-                    if (allEvents[30].IndexOf(nextKF) - 1 > -1)
+                    var nextKF = allEvents[30][nextKFIndex];
+                    if (nextKFIndex - 1 > -1)
                     {
-                        prevDangerColor = (int)allEvents[30][allEvents[30].IndexOf(nextKF) - 1].eventValues[2];
+                        prevDangerColor = (int)allEvents[30][nextKFIndex - 1].eventValues[2];
                     }
                     else
                     {
