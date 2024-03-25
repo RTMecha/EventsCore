@@ -575,10 +575,12 @@ namespace EventsCore
 
                 if (allowWindowPositioning && !RTFunctions.FunctionsPlugin.Fullscreen.Value && (!EditorManager.inst || !EditorManager.inst.isEditing))
                 {
-                    WindowController.SetWindowPos(WindowController.WindowHandle, 0, (int)windowPosition.x + WindowController.WindowCenter.x, -(int)windowPosition.y + WindowController.WindowCenter.y, 0, 0, 1);
+                    WindowController.SetWindowPos(
+                        WindowController.WindowHandle, 0, (int)windowPosition.x + WindowController.WindowCenter.x, -(int)windowPosition.y + WindowController.WindowCenter.y,
+                        forceWindow ? (int)windowResolution.x : 0, forceWindow ? (int)windowResolution.y : 0, forceWindow ? 0 : 1);
                 }
 
-                if (forceWindow && (!EditorManager.inst || !EditorManager.inst.isEditing))
+                if (forceWindow && !allowWindowPositioning && (!EditorManager.inst || !EditorManager.inst.isEditing))
                 {
                     setWindow = true;
                     WindowController.SetResolution((int)windowResolution.x, (int)windowResolution.y, false);
@@ -587,7 +589,6 @@ namespace EventsCore
                 if (!forceWindow && setWindow)
                 {
                     setWindow = false;
-                    Debug.LogError("AAAAAAAAA");
                     WindowController.ResetResolution(false);
                 }
 
