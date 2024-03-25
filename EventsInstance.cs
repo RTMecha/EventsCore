@@ -34,6 +34,9 @@ namespace EventsCore
             __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); // Bars
             __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); // 3D Rotation
             __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); // Camera Depth
+            __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); // Window Base
+            __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); // Window Position X
+            __instance.allEvents.Add(new List<DataManager.GameData.EventKeyframe>()); // Window Position Y
         }
     }
 }

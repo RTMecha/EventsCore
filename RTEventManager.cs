@@ -43,6 +43,7 @@ namespace EventsCore
                 Destroy(gameObject);
 
             SetResetOffsets();
+            offsets = ResetOffsets();
 
             if (!ModCompatibility.sharedFunctions.ContainsKey("EventsCoreResetOffsets"))
                 ModCompatibility.sharedFunctions.Add("EventsCoreResetOffsets", (Action)SetResetOffsets);
@@ -572,6 +573,24 @@ namespace EventsCore
                 GameStorageManager.inst.video.localRotation = Quaternion.Euler(videoBGRot);
                 GameStorageManager.inst.video.gameObject.layer = videoBGRenderLayer == 0 ? 9 : 8;
 
+                if (allowWindowPositioning && !RTFunctions.FunctionsPlugin.Fullscreen.Value && (!EditorManager.inst || !EditorManager.inst.isEditing))
+                {
+                    WindowController.SetWindowPos(WindowController.WindowHandle, 0, (int)windowPosition.x + WindowController.WindowCenter.x, -(int)windowPosition.y + WindowController.WindowCenter.y, 0, 0, 1);
+                }
+
+                if (forceWindow && (!EditorManager.inst || !EditorManager.inst.isEditing))
+                {
+                    setWindow = true;
+                    WindowController.SetResolution((int)windowResolution.x, (int)windowResolution.y, false);
+                }
+
+                if (!forceWindow && setWindow)
+                {
+                    setWindow = false;
+                    Debug.LogError("AAAAAAAAA");
+                    WindowController.ResetResolution(false);
+                }
+
                 foreach (var customPlayer in PlayerManager.Players)
                 {
                     if (customPlayer.Player && customPlayer.Player.playerObjects.ContainsKey("RB Parent"))
@@ -1018,16 +1037,30 @@ namespace EventsCore
                 EventManager.inst.camParent.transform.localPosition = vector + new Vector3(camOffsetX, camOffsetY, 0f);
         }
 
+        #region Move - 0
+
         // 0 - 0
         public static void updateCameraPositionX(float x) => EventManager.inst.camPos.x = x;
         // 0 - 1
         public static void updateCameraPositionY(float x) => EventManager.inst.camPos.y = x;
 
+        #endregion
+
+        #region Zoom - 1
+
         // 1 - 0
         public static void updateCameraZoom(float x) => EventManager.inst.camZoom = x;
 
+        #endregion
+
+        #region Rotate - 2
+
         // 2 - 0
         public static void updateCameraRotation(float x) => EventManager.inst.camRot = x;
+
+        #endregion
+
+        #region Shake - 3
 
         // 3 - 0
         public static void updateCameraShakeMultiplier(float x) => EventManager.inst.shakeMultiplier = x;
@@ -1044,6 +1077,10 @@ namespace EventsCore
         // 3 - 4
 
         public static void updateCameraShakeSpeed(float x) => inst.shakeSpeed = x;
+
+        #endregion
+
+        #region Theme - 4
 
         // 4 - 0
         public static void updateTheme(float x)
@@ -1064,8 +1101,16 @@ namespace EventsCore
         /// <returns>The current BeatmapTheme.</returns>
         public static DataManager.BeatmapTheme GetTheme(int id) => DataManager.inst.AllThemes.Has(x => Parser.TryParse(x.id, 0) == id) ? DataManager.inst.AllThemes.Find(x => Parser.TryParse(x.id, 0) == id) : DataManager.inst.AllThemes[0];
 
+        #endregion
+
+        #region Chroma - 5
+
         // 5 - 0
         public static void updateCameraChromatic(float x) => EventManager.inst.camChroma = x;
+
+        #endregion
+
+        #region Bloom - 6
 
         // 6 - 0
         public static void updateCameraBloom(float x) => EventManager.inst.camBloom = x;
@@ -1081,6 +1126,10 @@ namespace EventsCore
 
         // 6 - 4
         public static void updateCameraBloomColor(float x) => inst.bloomColor = x;
+
+        #endregion
+
+        #region Vignette - 7
 
         // 7 - 0
         public static void updateCameraVignette(float x) => EventManager.inst.vignetteIntensity = x;
@@ -1103,6 +1152,10 @@ namespace EventsCore
         // 7 - 6
         public static void updateCameraVignetteColor(float x) => inst.vignetteColor = x;
 
+        #endregion
+
+        #region Lens - 8
+
         // 8 - 0
         public static void updateCameraLens(float x) => EventManager.inst.lensDistortIntensity = x;
 
@@ -1121,6 +1174,10 @@ namespace EventsCore
         // 8 - 5
         public static void updateCameraLensScale(float x) => LSEffectsManager.inst.lensDistort.scale.Override(x);
 
+        #endregion
+
+        #region Grain - 9
+
         // 9 - 0
         public static void updateCameraGrain(float x) => EventManager.inst.grainIntensity = x;
 
@@ -1129,6 +1186,10 @@ namespace EventsCore
 
         // 9 - 2
         public static void updateCameraGrainSize(float x) => EventManager.inst.grainSize = x;
+
+        #endregion
+
+        #region ColorGrading - 10
 
         // 10 - 0
         public static void updateCameraHueShift(float x) => inst.colorGradingHueShift = x;
@@ -1157,6 +1218,10 @@ namespace EventsCore
         // 10 - 8
         public static void updateCameraTint(float x) => inst.colorGradingTint = x;
 
+        #endregion
+
+        #region Ripples - 11
+
         // 11 - 0
         public static void updateCameraRipplesStrength(float x) => inst.ripplesStrength = x;
 
@@ -1172,20 +1237,36 @@ namespace EventsCore
         // 11 - 4
         public static void updateCameraRipplesWidth(float x) => inst.ripplesWidth = x;
 
+        #endregion
+
+        #region RadialBlur - 12
+
         // 12 - 0
         public static void updateCameraRadialBlurIntensity(float x) => inst.radialBlurIntensity = x;
 
         // 12 - 1
         public static void updateCameraRadialBlurIterations(float x) => inst.radialBlurIterations = Mathf.Clamp((int)x, 1, 30);
 
+        #endregion
+
+        #region ColorSplit - 13
+
         // 13 - 0
         public static void updateCameraColorSplit(float x) => inst.colorSplitOffset = x;
+
+        #endregion
+
+        #region Offset - 14
 
         // 14 - 0
         public static void updateCameraOffsetX(float x) => inst.camOffsetX = x;
 
         // 14 - 1
         public static void updateCameraOffsetY(float x) => inst.camOffsetY = x;
+
+        #endregion
+
+        #region Gradient - 15
 
         // 15 - 0
         public static void updateCameraGradientIntensity(float x) => inst.gradientIntensity = x;
@@ -1202,8 +1283,16 @@ namespace EventsCore
         // 15 - 4
         public static void updateCameraGradientMode(float x) => RTEffectsManager.inst.gradient.blendMode.Override((SCPE.Gradient.BlendMode)(int)x);
 
+        #endregion
+
+        #region DoubleVision - 16
+
         // 16 - 0
         public static void updateCameraDoubleVision(float x) => inst.doubleVision = x;
+
+        #endregion
+
+        #region ScanLines - 17
 
         // 17 - 0
         public static void updateCameraScanLinesIntensity(float x) => inst.scanLinesIntensity = x;
@@ -1214,14 +1303,26 @@ namespace EventsCore
         // 17 - 2
         public static void updateCameraScanLinesSpeed(float x) => inst.scanLinesSpeed = x;
 
+        #endregion
+
+        #region Blur - 18
+
         // 18 - 0
         public static void updateCameraBlurAmount(float x) => LSEffectsManager.inst.blur.amount.Override(!EventsCorePlugin.ShowFX.Value ? 0f : x);
 
         // 18 - 1
         public static void updateCameraBlurIterations(float x) => LSEffectsManager.inst.blur.iterations.Override(Mathf.Clamp((int)x, 1, 30));
 
+        #endregion
+
+        #region Pixelize - 19
+
         // 19 - 0
         public static void updateCameraPixelize(float x) => inst.pixel = Mathf.Clamp(x, 0f, 0.99999f);
+
+        #endregion
+
+        #region BG - 20
 
         // 20 - 0
         public static void updateCameraBGColor(float x) => inst.bgColor = x;
@@ -1238,8 +1339,16 @@ namespace EventsCore
 
         public float bgActive = 0f;
 
+        #endregion
+
+        #region Invert - 21
+
         // 21 - 0
         public static void updateCameraInvert(float x) => inst.invertAmount = x;
+
+        #endregion
+
+        #region Timeline - 22
 
         // 22 - 0
         public static void updateTimelineActive(float x)
@@ -1281,6 +1390,10 @@ namespace EventsCore
 
         // 22 - 6
         public static void updateTimelineColor(float x) => inst.timelineColor = x;
+
+        #endregion
+
+        #region Player - 23
 
         // 23 - 0
         public static void updatePlayerActive(float x)
@@ -1336,6 +1449,10 @@ namespace EventsCore
         // 23 - 5
         public static void updatePlayerOoB(float x) => RTFunctions.Functions.Components.Player.RTPlayer.OutOfBounds = x == 1f;
 
+        #endregion
+
+        #region Camera Follows Player - 24
+
         // 24 - 0
         public static void updateDelayTrackerActive(float x) => inst.delayTracker.active = (int)x == 1;
 
@@ -1366,11 +1483,19 @@ namespace EventsCore
         // 24 - 9
         public static void updateDelayTrackerAnchor(float x) => inst.delayTracker.anchor = x;
 
+        #endregion
+
+        #region Audio - 25
+
         // 25 - 0
         public static void updateAudioPitch(float x) => AudioManager.inst.pitch = Mathf.Clamp(x, 0.001f, 10f) * GameManager.inst.getPitch() * inst.pitchOffset;
 
         // 25 - 1
         public static void updateAudioVolume(float x) => inst.audioVolume = Mathf.Clamp(x, 0f, 1f);
+
+        #endregion
+
+        #region Video BG Parent - 26
 
         // 26 - 0
         public static void updateVideoBGParentPositionX(float x) => inst.videoBGParentPos.x = x;
@@ -1390,6 +1515,10 @@ namespace EventsCore
         public static void updateVideoBGParentRotationY(float x) => inst.videoBGParentRot.y = x;
         // 26 - 8
         public static void updateVideoBGParentRotationZ(float x) => inst.videoBGParentRot.z = x;
+
+        #endregion
+
+        #region Video BG - 27
 
         // 27 - 0
         public static void updateVideoBGPositionX(float x) => inst.videoBGPos.x = x;
@@ -1412,11 +1541,25 @@ namespace EventsCore
         // 27 - 9
         public static void updateVideoBGRenderLayer(float x) => inst.videoBGRenderLayer = (int)x;
 
+        #endregion
+
+        #region Sharpen - 28
+
         // 28 - 0
         public static void updateSharpen(float x) => inst.sharpen = x;
+
+        #endregion
+
+        #region Bars - 29
+
         // 29 - 0
         public static void updateBlackBarsIntensity(float x) => inst.blackBarsIntensity = x;
+        // 29 - 1
         public static void updateBlackBarsMode(float x) => inst.blackBarsMode = x;
+
+        #endregion
+
+        #region Danger - 30
 
         // 30 - 0
         public static void updateDangerIntensity(float x) => inst.dangerIntensity = x;
@@ -1425,10 +1568,18 @@ namespace EventsCore
         // 30 - 2
         public static void updateDangerColor(float x) => inst.dangerColor = x;
 
+        #endregion
+
+        #region 3D Rotation - 31
+
         // 31 - 0
         public static void updateCameraRotationX(float x) => inst.camRotOffset.x = x;
         // 31 - 1
         public static void updateCameraRotationY(float x) => inst.camRotOffset.y = x;
+
+        #endregion
+
+        #region Camera Depth - 32
 
         // 32 - 0
         public static void updateCameraDepth(float x) => inst.zPosition = x;
@@ -1437,7 +1588,45 @@ namespace EventsCore
 
         #endregion
 
+        #region Window Base - 33
+
+        // 33 - 0
+        public static void updateWindowForceResolution(float x) => inst.forceWindow = (int)x == 1;
+        // 33 - 1
+        public static void updateWindowResolutionX(float x) => inst.windowResolution.x = x;
+        // 33 - 2
+        public static void updateWindowResolutionY(float x) => inst.windowResolution.y = x;
+        // 33 - 3
+        public static void updateWindowAllowPositioning(float x) => inst.allowWindowPositioning = (int)x == 1;
+
+        #endregion
+
+        #region Window Position X - 34
+
+        // 34 - 0
+        public static void updateWindowPositionX(float x) => inst.windowPosition.x = x;
+
+        #endregion
+
+        #region Window Position Y - 35
+
+        // 35 - 0
+        public static void updateWindowPositionY(float x) => inst.windowPosition.y = x;
+
+        #endregion
+
+        #endregion
+
         #region Variables
+
+        bool setWindow = false;
+
+        public bool allowWindowPositioning = false;
+
+        public Vector2 windowResolution = Vector2.zero;
+        public Vector2 windowPosition = Vector2.zero;
+
+        public bool forceWindow = false;
 
         public float zPosition = -10f;
 
@@ -1786,230 +1975,25 @@ namespace EventsCore
                     0f, // Camera Depth
                     0f, // Camera Perspective Zoom
                 },
+                new List<float>
+                {
+                    0f, // Force Window Resolution (1 = true, includes position)
+					0f, // Window Resolution X
+					0f, // Window Resolution Y
+					0f, // Window Allow Positioning
+                },
+                new List<float>
+                {
+                    0f, // Window Position X
+                },
+                new List<float>
+                {
+                    0f, // Window Position Y
+                },
             };
         }
 
-        List<List<float>> offsets = new List<List<float>>
-        {
-            new List<float>
-            {
-                0f, // Move X
-                0f, // Move Y
-            },
-            new List<float>
-            {
-                0f, // Zoom
-            },
-            new List<float>
-            {
-                0f, // Rotate
-            },
-            new List<float>
-            {
-                0f, // Shake
-                0f, // Shake X
-                0f, // Shake Y
-                0f, // Shake Interpolation
-                0f, // Shake Speed
-            },
-            new List<float>
-            {
-                0f, // Theme
-            },
-            new List<float>
-            {
-                0f, // Chromatic
-            },
-            new List<float>
-            {
-                0f, // Bloom Intensity
-                0f, // Bloom Diffusion
-                0f, // Bloom Threshold
-                0f, // Bloom Anamorphic Ratio
-                0f, // Bloom Color
-            },
-            new List<float>
-            {
-                0f, // Vignette Intensity
-                0f, // Vignette Smoothness
-                0f, // Vignette Rounded
-                0f, // Vignette Roundness
-                0f, // Vignette Center X
-                0f, // Vignette Center Y
-                0f, // Vignette Color
-            },
-            new List<float>
-            {
-                0f, // Lens Intensity
-                0f, // Lens Center X
-                0f, // Lens Center Y
-                0f, // Lens Intensity X
-                0f, // Lens Intensity Y
-                0f, // Lens Scale
-            },
-            new List<float>
-            {
-                0f, // Grain Intensity
-                0f, // Grain Colored
-                0f, // Grain Size
-            },
-            new List<float>
-            {
-                0f, // ColorGrading Hueshift
-                0f, // ColorGrading Contrast
-                0f, // ColorGrading Gamma X
-                0f, // ColorGrading Gamma Y
-                0f, // ColorGrading Gamma Z
-                0f, // ColorGrading Gamma W
-                0f, // ColorGrading Saturation
-                0f, // ColorGrading Temperature
-                0f, // ColorGrading Tint
-            },
-            new List<float>
-            {
-                0f, // Ripples Strength
-                0f, // Ripples Speed
-                0f, // Ripples Distance
-                0f, // Ripples Height
-                0f, // Ripples Width
-            },
-            new List<float>
-            {
-                0f, // RadialBlur Intensity
-                0f, // RadialBlur Iterations
-            },
-            new List<float>
-            {
-                0f, // ColorSplit Offset
-            },
-            new List<float>
-            {
-                0f, // Camera Offset X
-                0f, // Camera Offset Y
-            },
-            new List<float>
-            {
-                0f, // Gradient Intensity
-                0f, // Gradient Rotation
-                0f, // Gradient Color Top
-                0f, // Gradient Color Bottom
-                0f, // Gradient Mode
-            },
-            new List<float>
-            {
-                0f, // DoubleVision Intensity
-            },
-            new List<float>
-            {
-                0f, // ScanLines Intensity
-                0f, // ScanLines Amount
-                0f, // ScanLines Speed
-            },
-            new List<float>
-            {
-                0f, // Blur Amount
-                0f, // Blur Iterations
-            },
-            new List<float>
-            {
-                0f, // Pixelize Amount
-            },
-            new List<float>
-            {
-                0f, // BG Color
-                0f, // BG Active
-            },
-            new List<float>
-            {
-                0f, // Invert Amount
-            },
-            new List<float>
-            {
-                0f, // Timeline Active
-                0f, // Timeline Pos X
-                0f, // Timeline Pos Y
-                0f, // Timeline Sca X
-                0f, // Timeline Sca Y
-                0f, // Timeline Rot
-                0f, // Timeline Color
-            },
-            new List<float>
-            {
-                0f, // Player Active
-                0f, // Player Moveable
-                0f, // Player Velocity
-                0f, // Player Rotation
-                0f, // Player OoB
-            },
-            new List<float>
-            {
-                0f, // Follow Player Active
-                0f, // Follow Player Move
-                0f, // Follow Player Rotate
-                0f, // Follow Player Sharpness
-                0f, // Follow Player Offset
-                0f, // Follow Player Limit Left
-                0f, // Follow Player Limit Right
-                0f, // Follow Player Limit Up
-                0f, // Follow Player Limit Down
-                0f, // Follow Player Anchor
-            },
-            new List<float>
-            {
-                0f, // Audio Pitch
-                0f, // Audio Volume
-            },
-            new List<float>
-            {
-                0f, // Video BG Parent Position X
-                0f, // Video BG Parent Position Y
-                0f, // Video BG Parent Position Z
-                0f, // Video BG Parent Scale X
-                0f, // Video BG Parent Scale Y
-                0f, // Video BG Parent Scale Z
-                0f, // Video BG Parent Rotation X
-                0f, // Video BG Parent Rotation Y
-                0f, // Video BG Parent Rotation Z
-            },
-            new List<float>
-            {
-                0f, // Video BG Position X
-                0f, // Video BG Position Y
-                0f, // Video BG Position Z
-                0f, // Video BG Scale X
-                0f, // Video BG Scale Y
-                0f, // Video BG Scale Z
-                0f, // Video BG Rotation X
-                0f, // Video BG Rotation Y
-                0f, // Video BG Rotation Z
-                0f, // Video BG Render Layer
-            },
-            new List<float>
-            {
-                0f, // Sharpen
-            },
-            new List<float>
-            {
-                0f, // Bars Intensity
-                0f, // Bars Mode
-            },
-            new List<float>
-            {
-                0f, // Danger Intensity
-                0f, // Danger Size
-                0f, // Danger Color
-            },
-            new List<float>
-            {
-                0f, // Rotation X
-                0f, // Rotation Y
-            },
-            new List<float>
-            {
-                0f, // Camera Depth
-                0f, // Camera Perspective Zoom
-            },
-        };
+        List<List<float>> offsets;
 
         #endregion
 
@@ -2017,7 +2001,7 @@ namespace EventsCore
 
         public delegate void KFDelegate(float t);
 
-        public KFDelegate[][] events = new KFDelegate[33][]
+        public KFDelegate[][] events = new KFDelegate[36][]
         {
             new KFDelegate[]
             {
@@ -2238,6 +2222,21 @@ namespace EventsCore
                 updateCameraDepth,
                 updateCameraPerspectiveZoom
             }, // Camera Depth
+            new KFDelegate[]
+            {
+                updateWindowForceResolution,
+                updateWindowResolutionX,
+                updateWindowResolutionY,
+                updateWindowAllowPositioning
+            },
+            new KFDelegate[]
+            {
+                updateWindowPositionX
+            },
+            new KFDelegate[]
+            {
+                updateWindowPositionY
+            },
         };
 
         public float shakeSpeed = 1f;
