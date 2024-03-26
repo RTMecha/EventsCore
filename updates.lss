@@ -1,3 +1,6 @@
+1.6.3 > [Mar 26, 2024]
+- Fixed theme update bug introduced in last update.
+- Added new Window Event Keyframes. You can now force the resolution and move the position of the PA window.
 1.6.2 > [Mar 12, 2024]
 - Added Player Can Exit Out of Bounds value to Player Event Keyframes.
 - Added BG Active value to BG Event Keyframes. Turning this off will unrender all Background Objects.
