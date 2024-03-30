@@ -531,7 +531,7 @@ namespace EventsCore
                 RTEffectsManager.inst.UpdateColorGrading(
                     !allowFX ? 0f : colorGradingHueShift,
                     !allowFX ? 0f : colorGradingContrast,
-                    !allowFX ? Vector4.zero : colorGradingGamma,
+                    !allowFX ? new Vector4(1f, 1f, 1f, 0f) : colorGradingGamma,
                     !allowFX ? 0f : colorGradingSaturation,
                     !allowFX ? 0f : colorGradingTemperature,
                     !allowFX ? 0f : colorGradingTint);
@@ -1684,12 +1684,12 @@ namespace EventsCore
 
         public float pixel;
 
-        public float colorGradingHueShift;
-        public float colorGradingContrast;
-        public Vector4 colorGradingGamma;
-        public float colorGradingSaturation;
-        public float colorGradingTemperature;
-        public float colorGradingTint;
+        public float colorGradingHueShift = 0.1f;
+        public float colorGradingContrast = 0.1f;
+        public Vector4 colorGradingGamma = new Vector4(1f, 1f, 1f, 0f);
+        public float colorGradingSaturation = 0.1f;
+        public float colorGradingTemperature = 0.1f;
+        public float colorGradingTint = 0.1f;
 
         public float gradientIntensity;
         public float gradientColor1;

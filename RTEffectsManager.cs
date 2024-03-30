@@ -7,30 +7,25 @@ namespace EventsCore
 {
     public class RTEffectsManager : MonoBehaviour
     {
-        private void Awake()
+        void Awake()
         {
 			if (inst == null)
-			{
                 inst = this;
-				return;
-			}
-			if (inst != this)
-			{
+			else if (inst != this)
                 Destroy(gameObject);
-			}
 		}
 
-		private void Start()
+		void Start()
         {
 			//ColorGrading
 			colorGrading = ScriptableObject.CreateInstance<ColorGrading>();
 			colorGrading.enabled.Override(true);
-			colorGrading.hueShift.Override(0f);
-			colorGrading.contrast.Override(0f);
+			colorGrading.hueShift.Override(0.1f);
+			colorGrading.contrast.Override(0.1f);
 			colorGrading.gamma.Override(new Vector4(1f, 1f, 1f, 0f));
-			colorGrading.saturation.Override(0f);
-			colorGrading.temperature.Override(0f);
-			colorGrading.tint.Override(0f);
+			colorGrading.saturation.Override(0.1f);
+			colorGrading.temperature.Override(0.1f);
+			colorGrading.tint.Override(0.1f);
 
 			//Gradient
 			gradient = ScriptableObject.CreateInstance<SCPE.Gradient>();
