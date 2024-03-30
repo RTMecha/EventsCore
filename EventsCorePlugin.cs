@@ -26,7 +26,7 @@ using RTFunctions.Functions.Managers;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.6.3")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.6.4")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
