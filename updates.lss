@@ -1,3 +1,5 @@
+1.6.4 > [Mar 31, 2024]
+- Fixed a bug with ColorGrading not working due to the values defaulting to 0.
 1.6.3 > [Mar 26, 2024]
 - Fixed theme update bug introduced in last update.
 - Added new Window Event Keyframes. You can now force the resolution and move the position of the PA window.
