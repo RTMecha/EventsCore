@@ -24,6 +24,7 @@ using DOSequence = DG.Tweening.Sequence;
 using Ease = RTFunctions.Functions.Animation.Ease;
 using EaseFunction = RTFunctions.Functions.Animation.EaseFunction;
 using Random = UnityEngine.Random;
+using RTFunctions;
 
 namespace EventsCore
 {
@@ -573,17 +574,26 @@ namespace EventsCore
                 GameStorageManager.inst.video.localRotation = Quaternion.Euler(videoBGRot);
                 GameStorageManager.inst.video.gameObject.layer = videoBGRenderLayer == 0 ? 9 : 8;
 
-                if (allowWindowPositioning && !RTFunctions.FunctionsPlugin.Fullscreen.Value && (!EditorManager.inst || !EditorManager.inst.isEditing))
+                var screenScale = (float)Display.main.systemWidth / 1920f;
+                if (allowWindowPositioning && (!EditorManager.inst || !EditorManager.inst.isEditing))
                 {
+                    if (!setWindow)
+                    {
+                        setWindow = true;
+                        var res = DataManager.inst.resolutions[(int)FunctionsPlugin.Resolution.Value];
+
+                        WindowController.SetResolution((int)res.x, (int)res.y, false);
+                    }
+
                     WindowController.SetWindowPos(
-                        WindowController.WindowHandle, 0, (int)windowPosition.x + WindowController.WindowCenter.x, -(int)windowPosition.y + WindowController.WindowCenter.y,
-                        forceWindow ? (int)windowResolution.x : 0, forceWindow ? (int)windowResolution.y : 0, forceWindow ? 0 : 1);
+                        WindowController.WindowHandle, 0, (int)(windowPosition.x * screenScale) + WindowController.WindowCenter.x, -(int)(windowPosition.y * screenScale) + WindowController.WindowCenter.y,
+                        forceWindow ? (int)(windowResolution.x * screenScale) : 0, forceWindow ? (int)(windowResolution.y * screenScale) : 0, forceWindow ? 0 : 1);
                 }
 
                 if (forceWindow && !allowWindowPositioning && (!EditorManager.inst || !EditorManager.inst.isEditing))
                 {
                     setWindow = true;
-                    WindowController.SetResolution((int)windowResolution.x, (int)windowResolution.y, false);
+                    WindowController.SetResolution((int)(windowResolution.x * screenScale), (int)(windowResolution.y * screenScale), false);
                 }
 
                 if (!forceWindow && setWindow)
