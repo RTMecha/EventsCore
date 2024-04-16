@@ -1,3 +1,6 @@
+1.6.5 > [Apr 16, 2024]
+- Made window event keyframes consistent across monitor resolutions.
+- Fixed window event keyframes not setting when in editor and in preview mode.
 1.6.4 > [Mar 31, 2024]
 - Fixed a bug with ColorGrading not working due to the values defaulting to 0. (Actually, apparently not. Still have no idea why this bug is happening...)
 1.6.3 > [Mar 26, 2024]
