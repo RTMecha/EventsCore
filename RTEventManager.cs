@@ -392,7 +392,8 @@ namespace EventsCore
 
             if (Playable)
             {
-                InputDataManager.inst.SetAllControllerRumble(EventManager.inst.shakeMultiplier);
+                if (FunctionsPlugin.ControllerRumble.Value)
+                    InputDataManager.inst.SetAllControllerRumble(EventManager.inst.shakeMultiplier);
 
                 if (RTFunctions.Functions.Optimization.Updater.UseNewUpdateMethod)
                 {
@@ -402,27 +403,6 @@ namespace EventsCore
                 }
                 else
                     currentTime = AudioManager.inst.CurrentAudioSource.time;
-
-                #region Lerp Colors
-
-                FindColors();
-
-                if (!float.IsNaN(bloomColor))
-                    LerpBloomColor();
-                if (!float.IsNaN(vignetteColor))
-                    LerpVignetteColor();
-                if (!float.IsNaN(gradientColor1))
-                    LerpGradientColor1();
-                if (!float.IsNaN(gradientColor2))
-                    LerpGradientColor2();
-                if (!float.IsNaN(bgColor))
-                    LerpBGColor();
-                if (!float.IsNaN(timelineColor))
-                    LerpTimelineColor();
-                if (!float.IsNaN(dangerColor))
-                    LerpDangerColor();
-
-                #endregion
 
                 #region New Sequences
 
@@ -449,6 +429,7 @@ namespace EventsCore
 
                 #endregion
 
+                FindColors();
                 Interpolate();
 
                 #region Camera
@@ -568,7 +549,7 @@ namespace EventsCore
                 GameStorageManager.inst.extraBG.localPosition = videoBGParentPos;
                 GameStorageManager.inst.extraBG.localScale = videoBGParentSca;
                 GameStorageManager.inst.extraBG.localRotation = Quaternion.Euler(videoBGParentRot);
-                
+
                 GameStorageManager.inst.video.localPosition = videoBGPos;
                 GameStorageManager.inst.video.localScale = videoBGSca;
                 GameStorageManager.inst.video.localRotation = Quaternion.Euler(videoBGRot);
@@ -616,6 +597,21 @@ namespace EventsCore
                 }
 
                 #endregion
+
+                #region Lerp Colors
+
+                LSEffectsManager.inst.bloom.color.Override(LerpColor(prevBloomColor, nextBloomColor, bloomColor, Color.white));
+                LSEffectsManager.inst.vignette.color.Override(LerpColor(prevVignetteColor, nextVignetteColor, vignetteColor, Color.black));
+
+                var beatmapTheme = RTHelpers.BeatmapTheme;
+                EventsCorePlugin.bgColorToLerp = LerpColor(prevBGColor, nextBGColor, bgColor, beatmapTheme.backgroundColor);
+                EventsCorePlugin.timelineColorToLerp = LerpColor(prevTimelineColor, nextTimelineColor, timelineColor, beatmapTheme.guiColor);
+                dangerColorResult = LerpColor(prevTimelineColor, prevDangerColor, nextDangerColor, defaultDangerColor);
+
+                RTEffectsManager.inst.gradient.color1.Override(LerpColor(prevGradientColor1, nextGradientColor1, gradientColor1, Color.black, new Color(0f, 0.8f, 0.56f, 0.5f)));
+                RTEffectsManager.inst.gradient.color2.Override(LerpColor(prevGradientColor2, nextGradientColor2, gradientColor2, Color.black, new Color(0.81f, 0.37f, 1f, 0.5f)));
+
+                #endregion
             }
 
             EventManager.inst.prevCamZoom = EventManager.inst.camZoom;
@@ -631,305 +627,118 @@ namespace EventsCore
 
         #region Lerp Colors
 
-        public void FindColors()
+        void FindColors()
         {
             var allEvents = DataManager.inst.gameData.eventObjects.allEvents;
             var time = currentTime;
 
-            if (allEvents[4].Count > 0)
-            {
-                var nextKFIndex = allEvents[4].FindIndex(x => x.eventTime > time + 0.0001f);
-                if (nextKFIndex >= 0)
-                {
-                    var nextKF = allEvents[4][nextKFIndex];
-                    if (nextKFIndex - 1 > -1)
-                    {
-                        if (allEvents[4][nextKFIndex - 1].eventValues.Length > 0)
-                        {
-                            EventManager.inst.LastTheme = (int)allEvents[4][nextKFIndex - 1].eventValues[0];
-                        }
-                    }
-                    else
-                    {
-                        if (allEvents[4][0].eventValues.Length > 0)
-                        {
-                            EventManager.inst.LastTheme = (int)allEvents[4][0].eventValues[0];
-                        }
-                    }
-                    if (nextKF.eventValues.Length > 0)
-                    {
-                        EventManager.inst.NewTheme = (int)nextKF.eventValues[0];
-                    }
-                }
-                else
-                {
-                    var finalKF = allEvents[4][allEvents[4].Count - 1];
-
-                    int a = allEvents[4].Count - 2;
-                    if (a < 0)
-                    {
-                        a = 0;
-                    }
-                    if (allEvents[4][a].eventValues.Length > 0)
-                    {
-                        EventManager.inst.LastTheme = (int)allEvents[4][a].eventValues[0];
-                    }
-
-                    if (finalKF.eventValues.Length > 0)
-                    {
-                        EventManager.inst.NewTheme = (int)finalKF.eventValues[0];
-                    }
-                }
-            }
-
-            if (allEvents[6].Count > 0)
-            {
-                var nextKFIndex = allEvents[6].FindIndex(x => x.eventTime > time + 0.0001f);
-                if (nextKFIndex >= 0)
-                {
-                    var nextKF = allEvents[6][nextKFIndex];
-                    if (nextKFIndex - 1 > -1)
-                    {
-                        if (allEvents[6][nextKFIndex - 1].eventValues.Length > 4)
-                        {
-                            prevBloomColor = (int)allEvents[6][nextKFIndex - 1].eventValues[4];
-                        }
-                    }
-                    else
-                    {
-                        if (allEvents[6][0].eventValues.Length > 4)
-                        {
-                            prevBloomColor = (int)allEvents[6][0].eventValues[4];
-                        }
-                    }
-                    if (nextKF.eventValues.Length > 4)
-                    {
-                        nextBloomColor = (int)nextKF.eventValues[4];
-                    }
-                }
-                else
-                {
-                    var finalKF = allEvents[6][allEvents[6].Count - 1];
-
-                    int a = allEvents[6].Count - 2;
-                    if (a < 0)
-                    {
-                        a = 0;
-                    }
-                    if (allEvents[6][a].eventValues.Length > 4)
-                    {
-                        prevBloomColor = (int)allEvents[6][a].eventValues[4];
-                    }
-
-                    if (finalKF.eventValues.Length > 4)
-                    {
-                        nextBloomColor = (int)finalKF.eventValues[4];
-                    }
-                }
-            }
-
-            if (allEvents[7].Count > 0)
-            {
-                var nextKFIndex = allEvents[7].FindIndex(x => x.eventTime > time + 0.0001f);
-                if (nextKFIndex >= 0)
-                {
-                    var nextKF = allEvents[7][nextKFIndex];
-                    if (nextKFIndex - 1 > -1)
-                    {
-                        if (allEvents[7][nextKFIndex - 1].eventValues.Length > 6)
-                        {
-                            prevVignetteColor = (int)allEvents[7][nextKFIndex - 1].eventValues[6];
-                        }
-                    }
-                    else
-                    {
-                        if (allEvents[7][0].eventValues.Length > 6)
-                        {
-                            prevVignetteColor = (int)allEvents[7][0].eventValues[6];
-                        }
-                    }
-                    if (nextKF.eventValues.Length > 6)
-                    {
-                        nextVignetteColor = (int)nextKF.eventValues[6];
-                    }
-                }
-                else
-                {
-                    var finalKF = allEvents[7][allEvents[7].Count - 1];
-
-                    int a = allEvents[7].Count - 2;
-                    if (a < 0)
-                    {
-                        a = 0;
-                    }
-                    if (allEvents[7][a].eventValues.Length > 6)
-                    {
-                        prevVignetteColor = (int)allEvents[7][a].eventValues[6];
-                    }
-
-                    if (finalKF.eventValues.Length > 6)
-                    {
-                        nextVignetteColor = (int)finalKF.eventValues[6];
-                    }
-                }
-            }
-
-            if (allEvents.Count > 15 && allEvents[15].Count > 0)
-            {
-                var nextKFIndex = allEvents[15].FindIndex(x => x.eventTime > time + 0.0001f);
-                if (nextKFIndex >= 0)
-                {
-                    var nextKF = allEvents[15][nextKFIndex];
-                    if (nextKFIndex - 1 > -1)
-                    {
-                        if (allEvents[15][nextKFIndex - 1].eventValues.Length > 2)
-                        {
-                            prevGradientColor1 = (int)allEvents[15][nextKFIndex - 1].eventValues[2];
-                            prevGradientColor2 = (int)allEvents[15][nextKFIndex - 1].eventValues[3];
-                        }
-                    }
-                    else
-                    {
-                        if (allEvents[15][0].eventValues.Length > 2)
-                        {
-                            prevGradientColor1 = (int)allEvents[15][0].eventValues[2];
-                            prevGradientColor2 = (int)allEvents[15][0].eventValues[3];
-                        }
-                    }
-                    if (nextKF.eventValues.Length > 2)
-                    {
-                        nextGradientColor1 = (int)nextKF.eventValues[2];
-                        nextGradientColor2 = (int)nextKF.eventValues[3];
-                    }
-                }
-                else
-                {
-                    var finalKF = allEvents[15][allEvents[15].Count - 1];
-
-                    int a = allEvents[15].Count - 2;
-                    if (a < 0)
-                    {
-                        a = 0;
-                    }
-                    if (allEvents[15][a].eventValues.Length > 2)
-                    {
-                        prevGradientColor1 = (int)allEvents[15][a].eventValues[2];
-                        prevGradientColor2 = (int)allEvents[15][a].eventValues[3];
-                    }
-
-                    if (finalKF.eventValues.Length > 2)
-                    {
-                        nextGradientColor1 = (int)finalKF.eventValues[2];
-                        nextGradientColor2 = (int)finalKF.eventValues[3];
-                    }
-                }
-            }
-
-            if (allEvents.Count > 20 && allEvents[20].Count > 0)
-            {
-                var nextKFIndex = allEvents[20].FindIndex(x => x.eventTime > time + 0.0001f);
-                if (nextKFIndex >= 0)
-                {
-                    var nextKF = allEvents[20][nextKFIndex];
-                    if (nextKFIndex - 1 > -1)
-                    {
-                        prevBGColor = (int)allEvents[20][nextKFIndex - 1].eventValues[0];
-                    }
-                    else
-                    {
-                        prevBGColor = (int)allEvents[20][0].eventValues[0];
-                    }
-                    nextBGColor = (int)nextKF.eventValues[0];
-                }
-                else
-                {
-                    var finalKF = allEvents[20][allEvents[20].Count - 1];
-
-                    int a = allEvents[20].Count - 2;
-                    if (a < 0)
-                    {
-                        a = 0;
-                    }
-                    prevBGColor = (int)allEvents[20][a].eventValues[0];
-                    nextBGColor = (int)finalKF.eventValues[0];
-                }
-            }
-
-            if (allEvents.Count > 22 && allEvents[22].Count > 0)
-            {
-                var nextKFIndex = allEvents[22].FindIndex(x => x.eventTime > time + 0.0001f);
-                if (nextKFIndex >= 0)
-                {
-                    var nextKF = allEvents[22][nextKFIndex];
-                    if (nextKFIndex - 1 > -1)
-                    {
-                        prevTimelineColor = (int)allEvents[22][nextKFIndex - 1].eventValues[6];
-                    }
-                    else
-                    {
-                        prevTimelineColor = (int)allEvents[22][0].eventValues[6];
-                    }
-                    nextTimelineColor = (int)nextKF.eventValues[6];
-                }
-                else
-                {
-                    var finalKF = allEvents[22][allEvents[22].Count - 1];
-
-                    int a = allEvents[22].Count - 2;
-                    if (a < 0)
-                    {
-                        a = 0;
-                    }
-                    prevTimelineColor = (int)allEvents[22][a].eventValues[6];
-                    nextTimelineColor = (int)finalKF.eventValues[6];
-                }
-            }
-
-            if (allEvents.Count > 30 && allEvents[30].Count > 0)
-            {
-                var nextKFIndex = allEvents[30].FindIndex(x => x.eventTime > time + 0.0001f);
-                if (nextKFIndex >= 0)
-                {
-                    var nextKF = allEvents[30][nextKFIndex];
-                    if (nextKFIndex - 1 > -1)
-                    {
-                        prevDangerColor = (int)allEvents[30][nextKFIndex - 1].eventValues[2];
-                    }
-                    else
-                    {
-                        prevDangerColor = (int)allEvents[30][0].eventValues[2];
-                    }
-                    nextDangerColor = (int)nextKF.eventValues[2];
-                }
-                else
-                {
-                    var finalKF = allEvents[30][allEvents[30].Count - 1];
-
-                    int a = allEvents[30].Count - 2;
-                    if (a < 0)
-                    {
-                        a = 0;
-                    }
-                    prevDangerColor = (int)allEvents[30][a].eventValues[2];
-                    nextDangerColor = (int)finalKF.eventValues[2];
-                }
-            }
+            FindColor(time, allEvents, ref EventManager.inst.LastTheme, ref EventManager.inst.NewTheme, 4, 0);
+            FindColor(time, allEvents, ref prevBloomColor, ref nextBloomColor, 6, 4);
+            FindColor(time, allEvents, ref prevVignetteColor, ref nextVignetteColor, 7, 6);
+            FindColor(time, allEvents, ref prevGradientColor1, ref nextGradientColor1, ref prevGradientColor2, ref nextGradientColor2, 15, 2, 3);
+            FindColor(time, allEvents, ref prevBGColor, ref nextBGColor, 20, 0);
+            FindColor(time, allEvents, ref prevTimelineColor, ref nextTimelineColor, 22, 6);
+            FindColor(time, allEvents, ref prevDangerColor, ref nextDangerColor, 30, 2);
         }
 
-        public void LerpBloomColor()
+        void FindColor(float time, List<List<DataManager.GameData.EventKeyframe>> allEvents, ref int prev, ref int next, int type, int valueIndex)
         {
-            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevBloomColor && prevBloomColor > -1 ? RTHelpers.BeatmapTheme.effectColors[prevBloomColor] : Color.white;
-            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextBloomColor && nextBloomColor > -1 ? RTHelpers.BeatmapTheme.effectColors[nextBloomColor] : Color.white;
+            if (allEvents.Count <= type || allEvents[type].Count <= 0)
+                return;
 
-            LSEffectsManager.inst.bloom.color.Override(Color.Lerp(previous, next, bloomColor));
+            var nextKFIndex = allEvents[type].FindLastIndex(x => x.eventTime <= time) + 1;
+            if (nextKFIndex < allEvents[type].Count)
+            {
+                var nextKF = allEvents[type][nextKFIndex];
+                if (nextKFIndex - 1 > -1 && allEvents[type][nextKFIndex - 1].eventValues.Length > valueIndex)
+                    prev = (int)allEvents[type][nextKFIndex - 1].eventValues[valueIndex];
+                else if (allEvents[type][0].eventValues.Length > valueIndex)
+                    prev = (int)allEvents[type][0].eventValues[valueIndex];
+
+                if (nextKF.eventValues.Length > valueIndex)
+                    next = (int)nextKF.eventValues[valueIndex];
+
+                return;
+            }
+
+            var finalKF = allEvents[type][allEvents[type].Count - 1];
+
+            int a = allEvents[type].Count - 2;
+            if (a < 0)
+                a = 0;
+
+            if (allEvents[type][a].eventValues.Length > valueIndex)
+                prev = (int)allEvents[type][a].eventValues[valueIndex];
+
+            if (finalKF.eventValues.Length > valueIndex)
+                next = (int)finalKF.eventValues[valueIndex];
+        }
+        
+        void FindColor(float time, List<List<DataManager.GameData.EventKeyframe>> allEvents, ref int prev1, ref int next1, ref int prev2, ref int next2, int type, int valueIndex1, int valueIndex2)
+        {
+            if (allEvents.Count <= type || allEvents[type].Count <= 0)
+                return;
+
+            var nextKFIndex = allEvents[type].FindLastIndex(x => x.eventTime <= time) + 1;
+            if (nextKFIndex < allEvents[type].Count)
+            {
+                var nextKF = allEvents[type][nextKFIndex];
+                if (nextKFIndex - 1 > -1 && allEvents[type][nextKFIndex - 1].eventValues.Length > valueIndex1)
+                    prev1 = (int)allEvents[type][nextKFIndex - 1].eventValues[valueIndex1];
+                else if (allEvents[type][0].eventValues.Length > valueIndex1)
+                    prev1 = (int)allEvents[type][0].eventValues[valueIndex1];
+
+                if (nextKFIndex - 1 > -1 && allEvents[type][nextKFIndex - 1].eventValues.Length > valueIndex2)
+                    prev2 = (int)allEvents[type][nextKFIndex - 1].eventValues[valueIndex2];
+                else if (allEvents[type][0].eventValues.Length > valueIndex2)
+                    prev2 = (int)allEvents[type][0].eventValues[valueIndex2];
+
+                if (nextKF.eventValues.Length > valueIndex1)
+                    next1 = (int)nextKF.eventValues[valueIndex1];
+
+                if (nextKF.eventValues.Length > valueIndex2)
+                    next2 = (int)nextKF.eventValues[valueIndex2];
+
+                return;
+            }
+
+            var finalKF = allEvents[type][allEvents[type].Count - 1];
+
+            int a = allEvents[type].Count - 2;
+            if (a < 0)
+                a = 0;
+
+            if (allEvents[type][a].eventValues.Length > valueIndex1)
+                prev1 = (int)allEvents[type][a].eventValues[valueIndex1];
+            if (allEvents[type][a].eventValues.Length > valueIndex2)
+                prev2 = (int)allEvents[type][a].eventValues[valueIndex2];
+
+            if (finalKF.eventValues.Length > valueIndex1)
+                next1 = (int)finalKF.eventValues[valueIndex1];
+            if (finalKF.eventValues.Length > valueIndex2)
+                next2 = (int)finalKF.eventValues[valueIndex2];
         }
 
-        public void LerpVignetteColor()
+        Color LerpColor(int prev, int next, float t, Color defaultColor)
         {
-            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevVignetteColor && prevVignetteColor > -1 ? RTHelpers.BeatmapTheme.effectColors[prevVignetteColor] : Color.black;
-            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextVignetteColor && nextVignetteColor > -1 ? RTHelpers.BeatmapTheme.effectColors[nextVignetteColor] : Color.black;
+            Color prevColor = RTHelpers.BeatmapTheme.effectColors.Count > prev && prev > -1 ? RTHelpers.BeatmapTheme.effectColors[prev] : defaultColor;
+            Color nextColor = RTHelpers.BeatmapTheme.effectColors.Count > next && next > -1 ? RTHelpers.BeatmapTheme.effectColors[next] : defaultColor;
 
-            LSEffectsManager.inst.vignette.color.Override(Color.Lerp(previous, next, vignetteColor));
+            if (float.IsNaN(t) || t < 0f)
+                t = 0f;
+
+            return Color.Lerp(prevColor, nextColor, t);
+        }
+        
+        Color LerpColor(int prev, int next, float t, Color defaultColor, Color defaultColor2)
+        {
+            Color prevColor = RTHelpers.BeatmapTheme.effectColors.Count > prev && prev > -1 ? RTHelpers.BeatmapTheme.effectColors[prev] : prev == 19 ? defaultColor : defaultColor2;
+            Color nextColor = RTHelpers.BeatmapTheme.effectColors.Count > next && next > -1 ? RTHelpers.BeatmapTheme.effectColors[next] : prev == 19 ? defaultColor : defaultColor2;
+
+            if (float.IsNaN(t) || t < 0f)
+                t = 0f;
+
+            return Color.Lerp(prevColor, nextColor, t);
         }
 
         public void LerpGradientColor1()
@@ -946,46 +755,6 @@ namespace EventsCore
             Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor2 && nextGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor2] : nextGradientColor2 == 19 ? Color.black : new Color(0.81f, 0.37f, 1f, 0.5f);
 
             RTEffectsManager.inst.gradient.color2.Override(Color.Lerp(previous, next, gradientColor2));
-        }
-
-        public void LerpBGColor()
-        {
-            var beatmapTheme = RTHelpers.BeatmapTheme;
-
-            Color previous = beatmapTheme.effectColors.Count > prevBGColor && prevBGColor > -1 ? beatmapTheme.effectColors[prevBGColor] : beatmapTheme.backgroundColor;
-            Color next = beatmapTheme.effectColors.Count > nextBGColor && nextBGColor > -1 ? beatmapTheme.effectColors[nextBGColor] : beatmapTheme.backgroundColor;
-
-            float num = bgColor;
-            if (float.IsNaN(num) || num < 0f)
-            {
-                num = 0f;
-            }
-
-            EventsCorePlugin.bgColorToLerp = Color.Lerp(previous, next, num);
-        }
-
-        public void LerpTimelineColor()
-        {
-            var beatmapTheme = RTHelpers.BeatmapTheme;
-
-            Color previous = beatmapTheme.effectColors.Count > prevTimelineColor && prevTimelineColor > -1 ? beatmapTheme.effectColors[prevTimelineColor] : beatmapTheme.guiColor;
-            Color next = beatmapTheme.effectColors.Count > nextTimelineColor && nextTimelineColor > -1 ? beatmapTheme.effectColors[nextTimelineColor] : beatmapTheme.guiColor;
-
-            float num = timelineColor;
-            if (float.IsNaN(num) || num < 0f)
-            {
-                num = 0f;
-            }
-
-            EventsCorePlugin.timelineColorToLerp = Color.Lerp(previous, next, num);
-        }
-
-        public void LerpDangerColor()
-        {
-            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevDangerColor && prevDangerColor > -1 ? RTHelpers.BeatmapTheme.effectColors[prevDangerColor] : defaultDangerColor;
-            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextDangerColor && nextDangerColor > -1 ? RTHelpers.BeatmapTheme.effectColors[nextDangerColor] : defaultDangerColor;
-
-            dangerColorResult = Color.Lerp(previous, next, dangerColor);
         }
 
         public Color dangerColorResult;
