@@ -1,3 +1,5 @@
+1.6.6 > [Apr 27, 2024]
+- Fixed event keyframes with color flashing for a frame due to the code being in the wrong order. (Also cleaned up the code related to the color stuff)
 1.6.5 > [Apr 16, 2024]
 - Made window event keyframes consistent across monitor resolutions.
 - Fixed window event keyframes not setting when in editor and in preview mode.
