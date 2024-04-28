@@ -25,6 +25,7 @@ using Ease = RTFunctions.Functions.Animation.Ease;
 using EaseFunction = RTFunctions.Functions.Animation.EaseFunction;
 using Random = UnityEngine.Random;
 using RTFunctions;
+using RTFunctions.Functions.Components.Player;
 
 namespace EventsCore
 {
@@ -382,10 +383,10 @@ namespace EventsCore
 
         float currentTime;
 
-        void Update()
+        public static void OnLevelTick()
         {
-            EditorCameraHandler(); FunctionsHandler();
-            GameManager.inst.timeline.SetActive(timelineActive);
+            inst.EditorCameraHandler(); inst.FunctionsHandler();
+            GameManager.inst.timeline.SetActive(inst.timelineActive);
 
             if (GameManager.inst.introMain != null && AudioManager.inst.CurrentAudioSource.time < 15f)
                 GameManager.inst.introMain.SetActive(EventsCorePlugin.ShowIntro.Value);
@@ -398,22 +399,18 @@ namespace EventsCore
                 if (RTFunctions.Functions.Optimization.Updater.UseNewUpdateMethod)
                 {
                     var currentAudioTime = AudioManager.inst.CurrentAudioSource.time;
-                    var smoothedTime = Mathf.SmoothDamp(previousAudioTime, currentAudioTime, ref audioTimeVelocity, 1.0f / 50.0f);
-                    currentTime = smoothedTime;
+                    var smoothedTime = Mathf.SmoothDamp(inst.previousAudioTime, currentAudioTime, ref inst.audioTimeVelocity, 1.0f / 50.0f);
+                    inst.currentTime = smoothedTime;
                 }
                 else
-                    currentTime = AudioManager.inst.CurrentAudioSource.time;
+                    inst.currentTime = AudioManager.inst.CurrentAudioSource.time;
 
                 #region New Sequences
 
                 if (EventManager.inst.eventSequence == null)
-                {
                     EventManager.inst.eventSequence = DOTween.Sequence();
-                }
                 if (EventManager.inst.themeSequence == null)
-                {
                     EventManager.inst.themeSequence = DOTween.Sequence();
-                }
                 if (EventManager.inst.shakeSequence == null && EventsCorePlugin.ShakeEventMode.Value == EventsCorePlugin.ShakeType.Original)
                 {
                     EventManager.inst.shakeSequence = DOTween.Sequence();
@@ -429,12 +426,12 @@ namespace EventsCore
 
                 #endregion
 
-                FindColors();
-                Interpolate();
+                inst.FindColors();
+                inst.Interpolate();
 
                 #region Camera
 
-                updateShake();
+                inst.updateShake();
 
                 if (float.IsNaN(EventManager.inst.camRot))
                     EventManager.inst.camRot = 0f;
@@ -443,28 +440,59 @@ namespace EventsCore
 
                 if (!EventsCorePlugin.EditorCamEnabled.Value)
                     EventManager.inst.cam.orthographicSize = EventManager.inst.camZoom;
-                else if (EditorSpeed != 0f)
-                    EventManager.inst.cam.orthographicSize = editorZoom;
+                else if (inst.EditorSpeed != 0f)
+                    EventManager.inst.cam.orthographicSize = inst.editorZoom;
 
                 if (!float.IsNaN(EventManager.inst.camRot) && !EventsCorePlugin.EditorCamEnabled.Value)
-                    EventManager.inst.camParent.transform.rotation = Quaternion.Euler(new Vector3(camRotOffset.x, camRotOffset.y, EventManager.inst.camRot));
-                else if (!float.IsNaN(editorRotate))
-                    EventManager.inst.camParent.transform.rotation = Quaternion.Euler(new Vector3(editorPerRotate.x, editorPerRotate.y, editorRotate));
+                    EventManager.inst.camParent.transform.rotation = Quaternion.Euler(new Vector3(inst.camRotOffset.x, inst.camRotOffset.y, EventManager.inst.camRot));
+                else if (!float.IsNaN(inst.editorRotate))
+                    EventManager.inst.camParent.transform.rotation = Quaternion.Euler(new Vector3(inst.editorPerRotate.x, inst.editorPerRotate.y, inst.editorRotate));
 
                 if (EditorManager.inst == null || !EventsCorePlugin.EditorCamEnabled.Value)
-                    EventManager.inst.camParentTop.transform.localPosition = new Vector3(EventManager.inst.camPos.x, EventManager.inst.camPos.y, zPosition);
+                    EventManager.inst.camParentTop.transform.localPosition = new Vector3(EventManager.inst.camPos.x, EventManager.inst.camPos.y, inst.zPosition);
                 else
-                    EventManager.inst.camParentTop.transform.localPosition = new Vector3(editorOffset.x, editorOffset.y, zPosition);
+                    EventManager.inst.camParentTop.transform.localPosition = new Vector3(inst.editorOffset.x, inst.editorOffset.y, inst.zPosition);
 
-                EventManager.inst.camPer.fieldOfView = fieldOfView;
+                EventManager.inst.camPer.fieldOfView = inst.fieldOfView;
 
                 if (!EventsCorePlugin.EditorCamEnabled.Value)
-                    EventManager.inst.camPer.transform.localPosition = new Vector3(EventManager.inst.camPer.transform.localPosition.x, EventManager.inst.camPer.transform.localPosition.y, -(EventManager.inst.camZoom) + perspectiveZoom);
+                    EventManager.inst.camPer.transform.localPosition = new Vector3(EventManager.inst.camPer.transform.localPosition.x, EventManager.inst.camPer.transform.localPosition.y, -(EventManager.inst.camZoom) + inst.perspectiveZoom);
                 else
-                    EventManager.inst.camPer.transform.localPosition = new Vector3(EventManager.inst.camPer.transform.localPosition.x, EventManager.inst.camPer.transform.localPosition.y, -(editorZoom) + perspectiveZoom);
+                    EventManager.inst.camPer.transform.localPosition = new Vector3(EventManager.inst.camPer.transform.localPosition.x, EventManager.inst.camPer.transform.localPosition.y, -(inst.editorZoom) + inst.perspectiveZoom);
 
-                if (setPerspectiveCamClip)
-                    EventManager.inst.camPer.nearClipPlane = -EventManager.inst.camPer.transform.position.z + camPerspectiveOffset;
+                if (inst.setPerspectiveCamClip)
+                    EventManager.inst.camPer.nearClipPlane = -EventManager.inst.camPer.transform.position.z + inst.camPerspectiveOffset;
+
+                #endregion
+
+                #region Lerp Colors
+
+                LSEffectsManager.inst.bloom.color.Override(
+                    ChangeColorHSV(LerpColor(inst.prevBloomColor, inst.nextBloomColor, inst.bloomColor, Color.white),
+                    inst.bloomHue, inst.bloomSat, inst.bloomVal));
+
+                LSEffectsManager.inst.vignette.color.Override(
+                    ChangeColorHSV(LerpColor(inst.prevVignetteColor, inst.nextVignetteColor, inst.vignetteColor, Color.black),
+                    inst.vignetteHue, inst.vignetteSat, inst.vignetteVal));
+
+                var beatmapTheme = RTHelpers.BeatmapTheme;
+                EventsCorePlugin.bgColorToLerp = ChangeColorHSV(LerpColor(inst.prevBGColor, inst.nextBGColor, inst.bgColor, beatmapTheme.backgroundColor), inst.bgHue, inst.bgSat, inst.bgVal);
+
+                EventsCorePlugin.timelineColorToLerp =
+                    LSColors.fadeColor(ChangeColorHSV(LerpColor(inst.prevTimelineColor, inst.nextTimelineColor, inst.timelineColor, beatmapTheme.guiColor),
+                    inst.timelineHue, inst.timelineSat, inst.timelineVal), inst.timelineOpacity);
+
+                inst.dangerColorResult =
+                    LSColors.fadeColor(ChangeColorHSV(LerpColor(inst.prevDangerColor, inst.nextDangerColor, inst.dangerColor, inst.defaultDangerColor),
+                    inst.dangerHue, inst.dangerSat, inst.dangerVal), inst.dangerOpacity);
+
+                RTEffectsManager.inst.gradient.color1.Override(
+                    LSColors.fadeColor(ChangeColorHSV(LerpColor(inst.prevGradientColor1, inst.nextGradientColor1, inst.gradientColor1, Color.black, new Color(0f, 0.8f, 0.56f, 0.5f)),
+                    inst.gradientColor1Hue, inst.gradientColor1Sat, inst.gradientColor1Val), inst.gradientColor1Opacity));
+
+                RTEffectsManager.inst.gradient.color2.Override(
+                    LSColors.fadeColor(ChangeColorHSV(LerpColor(inst.prevGradientColor2, inst.nextGradientColor2, inst.gradientColor2, Color.black, new Color(0.81f, 0.37f, 1f, 0.5f)),
+                    inst.gradientColor2Hue, inst.gradientColor2Sat, inst.gradientColor2Val), inst.gradientColor2Opacity));
 
                 #endregion
 
@@ -482,104 +510,107 @@ namespace EventsCore
                     LSEffectsManager.inst.UpdateLensDistort(!allowFX ? 0f : EventManager.inst.lensDistortIntensity);
                 if (!float.IsNaN(EventManager.inst.grainIntensity))
                     LSEffectsManager.inst.UpdateGrain(!allowFX ? 0f : EventManager.inst.grainIntensity, Mathf.RoundToInt(EventManager.inst.grainColored) == 1, EventManager.inst.grainSize);
-                if (!float.IsNaN(pixel))
-                    LSEffectsManager.inst.pixelize.amount.Override(!allowFX ? 0f : pixel);
+                if (!float.IsNaN(inst.pixel))
+                    LSEffectsManager.inst.pixelize.amount.Override(!allowFX ? 0f : inst.pixel);
 
-                if (float.IsNaN(colorGradingHueShift))
+                if (float.IsNaN(inst.colorGradingHueShift))
                 {
                     Debug.LogError($"{EventsCorePlugin.className}ColorGrading Hueshift was not a number!");
-                    colorGradingHueShift = 0f;
+                    inst.colorGradingHueShift = 0f;
                 }
 
-                if (float.IsNaN(colorGradingContrast))
+                if (float.IsNaN(inst.colorGradingContrast))
                 {
                     Debug.LogError($"{EventsCorePlugin.className}ColorGrading Contrast was not a number!");
-                    colorGradingContrast = 0f;
+                    inst.colorGradingContrast = 0f;
                 }
 
-                if (float.IsNaN(colorGradingSaturation))
+                if (float.IsNaN(inst.colorGradingSaturation))
                 {
                     Debug.LogError($"{EventsCorePlugin.className}ColorGrading Saturation was not a number!");
-                    colorGradingSaturation = 0f;
+                    inst.colorGradingSaturation = 0f;
                 }
 
-                if (float.IsNaN(colorGradingTint))
+                if (float.IsNaN(inst.colorGradingTint))
                 {
                     Debug.LogError($"{EventsCorePlugin.className}ColorGrading Tint was not a number!");
-                    colorGradingTint = 0f;
+                    inst.colorGradingTint = 0f;
                 }
 
                 //New effects
                 RTEffectsManager.inst.UpdateColorGrading(
-                    !allowFX ? 0f : colorGradingHueShift,
-                    !allowFX ? 0f : colorGradingContrast,
-                    !allowFX ? new Vector4(1f, 1f, 1f, 0f) : colorGradingGamma,
-                    !allowFX ? 0f : colorGradingSaturation,
-                    !allowFX ? 0f : colorGradingTemperature,
-                    !allowFX ? 0f : colorGradingTint);
+                    !allowFX ? 0f : inst.colorGradingHueShift,
+                    !allowFX ? 0f : inst.colorGradingContrast,
+                    !allowFX ? new Vector4(1f, 1f, 1f, 0f) : inst.colorGradingGamma,
+                    !allowFX ? 0f : inst.colorGradingSaturation,
+                    !allowFX ? 0f : inst.colorGradingTemperature,
+                    !allowFX ? 0f : inst.colorGradingTint);
 
-                if (!float.IsNaN(gradientIntensity))
-                    RTEffectsManager.inst.UpdateGradient(!allowFX ? 0f : gradientIntensity, gradientRotation);
-                if (!float.IsNaN(ripplesStrength))
-                    RTEffectsManager.inst.UpdateRipples(!allowFX ? 0f : ripplesStrength, ripplesSpeed, ripplesDistance, ripplesHeight, ripplesWidth);
-                if (!float.IsNaN(doubleVision))
-                    RTEffectsManager.inst.UpdateDoubleVision(!allowFX ? 0f : doubleVision);
-                if (!float.IsNaN(radialBlurIntensity))
-                    RTEffectsManager.inst.UpdateRadialBlur(!allowFX ? 0f : radialBlurIntensity, radialBlurIterations);
-                if (!float.IsNaN(scanLinesIntensity))
-                    RTEffectsManager.inst.UpdateScanlines(!allowFX ? 0f : scanLinesIntensity, scanLinesAmount, scanLinesSpeed);
-                if (!float.IsNaN(sharpen))
-                    RTEffectsManager.inst.UpdateSharpen(!allowFX ? 0f : sharpen);
-                if (!float.IsNaN(colorSplitOffset))
-                    RTEffectsManager.inst.UpdateColorSplit(!allowFX ? 0f : colorSplitOffset);
-                if (!float.IsNaN(dangerIntensity))
-                    RTEffectsManager.inst.UpdateDanger(!allowFX ? 0f : dangerIntensity, dangerColorResult, dangerSize);
-                if (!float.IsNaN(invertAmount))
-                    RTEffectsManager.inst.UpdateInvert(!allowFX ? 0f : invertAmount);
-                if (!float.IsNaN(blackBarsIntensity))
-                    RTEffectsManager.inst.UpdateBlackBars(!allowFX ? 0f : blackBarsIntensity, !allowFX ? 0f : blackBarsMode);
+                if (!float.IsNaN(inst.gradientIntensity))
+                    RTEffectsManager.inst.UpdateGradient(!allowFX ? 0f : inst.gradientIntensity, inst.gradientRotation);
+                if (!float.IsNaN(inst.ripplesStrength))
+                    RTEffectsManager.inst.UpdateRipples(!allowFX ? 0f : inst.ripplesStrength, inst.ripplesSpeed, inst.ripplesDistance, inst.ripplesHeight, inst.ripplesWidth);
+                if (!float.IsNaN(inst.doubleVision))
+                    RTEffectsManager.inst.UpdateDoubleVision(!allowFX ? 0f : inst.doubleVision);
+                if (!float.IsNaN(inst.radialBlurIntensity))
+                    RTEffectsManager.inst.UpdateRadialBlur(!allowFX ? 0f : inst.radialBlurIntensity, inst.radialBlurIterations);
+                if (!float.IsNaN(inst.scanLinesIntensity))
+                    RTEffectsManager.inst.UpdateScanlines(!allowFX ? 0f : inst.scanLinesIntensity, inst.scanLinesAmount, inst.scanLinesSpeed);
+                if (!float.IsNaN(inst.sharpen))
+                    RTEffectsManager.inst.UpdateSharpen(!allowFX ? 0f : inst.sharpen);
+                if (!float.IsNaN(inst.colorSplitOffset))
+                    RTEffectsManager.inst.UpdateColorSplit(!allowFX ? 0f : inst.colorSplitOffset);
+                if (!float.IsNaN(inst.dangerIntensity))
+                    RTEffectsManager.inst.UpdateDanger(!allowFX ? 0f : inst.dangerIntensity, inst.dangerColorResult, inst.dangerSize);
+                if (!float.IsNaN(inst.invertAmount))
+                    RTEffectsManager.inst.UpdateInvert(!allowFX ? 0f : inst.invertAmount);
+                if (!float.IsNaN(inst.blackBarsIntensity))
+                    RTEffectsManager.inst.UpdateBlackBars(!allowFX ? 0f : inst.blackBarsIntensity, !allowFX ? 0f : inst.blackBarsMode);
 
-                if (!float.IsNaN(timelineRot))
+                if (!float.IsNaN(inst.mosaicIntensity))
+                    RTEffectsManager.inst.UpdateMosaic(!allowFX ? 0f : inst.mosaicIntensity);
+
+                if (!float.IsNaN(inst.timelineRot))
                 {
-                    GameManager.inst.timeline.transform.localPosition = new Vector3(timelinePos.x, timelinePos.y, 0f);
-                    GameManager.inst.timeline.transform.localScale = new Vector3(timelineSca.x, timelineSca.y, 1f);
-                    GameManager.inst.timeline.transform.eulerAngles = new Vector3(0f, 0f, timelineRot);
+                    GameManager.inst.timeline.transform.localPosition = new Vector3(inst.timelinePos.x, inst.timelinePos.y, 0f);
+                    GameManager.inst.timeline.transform.localScale = new Vector3(inst.timelineSca.x, inst.timelineSca.y, 1f);
+                    GameManager.inst.timeline.transform.eulerAngles = new Vector3(0f, 0f, inst.timelineRot);
                 }
 
-                GameStorageManager.inst.extraBG.localPosition = videoBGParentPos;
-                GameStorageManager.inst.extraBG.localScale = videoBGParentSca;
-                GameStorageManager.inst.extraBG.localRotation = Quaternion.Euler(videoBGParentRot);
+                GameStorageManager.inst.extraBG.localPosition = inst.videoBGParentPos;
+                GameStorageManager.inst.extraBG.localScale = inst.videoBGParentSca;
+                GameStorageManager.inst.extraBG.localRotation = Quaternion.Euler(inst.videoBGParentRot);
 
-                GameStorageManager.inst.video.localPosition = videoBGPos;
-                GameStorageManager.inst.video.localScale = videoBGSca;
-                GameStorageManager.inst.video.localRotation = Quaternion.Euler(videoBGRot);
-                GameStorageManager.inst.video.gameObject.layer = videoBGRenderLayer == 0 ? 9 : 8;
+                GameStorageManager.inst.video.localPosition = inst.videoBGPos;
+                GameStorageManager.inst.video.localScale = inst.videoBGSca;
+                GameStorageManager.inst.video.localRotation = Quaternion.Euler(inst.videoBGRot);
+                GameStorageManager.inst.video.gameObject.layer = inst.videoBGRenderLayer == 0 ? 9 : 8;
 
                 var screenScale = (float)Display.main.systemWidth / 1920f;
-                if (allowWindowPositioning && (!EditorManager.inst || !EditorManager.inst.isEditing))
+                if (inst.allowWindowPositioning && (!EditorManager.inst || !EditorManager.inst.isEditing))
                 {
-                    if (!setWindow)
+                    if (!inst.setWindow)
                     {
-                        setWindow = true;
+                        inst.setWindow = true;
                         var res = DataManager.inst.resolutions[(int)FunctionsPlugin.Resolution.Value];
 
                         WindowController.SetResolution((int)res.x, (int)res.y, false);
                     }
 
                     WindowController.SetWindowPos(
-                        WindowController.WindowHandle, 0, (int)(windowPosition.x * screenScale) + WindowController.WindowCenter.x, -(int)(windowPosition.y * screenScale) + WindowController.WindowCenter.y,
-                        forceWindow ? (int)(windowResolution.x * screenScale) : 0, forceWindow ? (int)(windowResolution.y * screenScale) : 0, forceWindow ? 0 : 1);
+                        WindowController.WindowHandle, 0, (int)(inst.windowPosition.x * screenScale) + WindowController.WindowCenter.x, -(int)(inst.windowPosition.y * screenScale) + WindowController.WindowCenter.y,
+                        inst.forceWindow ? (int)(inst.windowResolution.x * screenScale) : 0, inst.forceWindow ? (int)(inst.windowResolution.y * screenScale) : 0, inst.forceWindow ? 0 : 1);
                 }
 
-                if (forceWindow && !allowWindowPositioning && (!EditorManager.inst || !EditorManager.inst.isEditing))
+                if (inst.forceWindow && !inst.allowWindowPositioning && (!EditorManager.inst || !EditorManager.inst.isEditing))
                 {
-                    setWindow = true;
-                    WindowController.SetResolution((int)(windowResolution.x * screenScale), (int)(windowResolution.y * screenScale), false);
+                    inst.setWindow = true;
+                    WindowController.SetResolution((int)(inst.windowResolution.x * screenScale), (int)(inst.windowResolution.y * screenScale), false);
                 }
 
-                if (!forceWindow && setWindow)
+                if (!inst.forceWindow && inst.setWindow)
                 {
-                    setWindow = false;
+                    inst.setWindow = false;
                     WindowController.ResetResolution(false);
                 }
 
@@ -588,28 +619,15 @@ namespace EventsCore
                     if (customPlayer.Player && customPlayer.Player.playerObjects.ContainsKey("RB Parent"))
                     {
                         var player = customPlayer.Player.playerObjects["RB Parent"].gameObject.transform;
-                        if (!playersCanMove)
+                        if (!inst.playersCanMove)
                         {
-                            player.localPosition = new Vector3(playerPositionX, playerPositionY, 0f);
-                            player.localRotation = Quaternion.Euler(0f, 0f, playerRotation);
+                            player.localPosition = new Vector3(inst.playerPositionX, inst.playerPositionY, 0f);
+                            player.localRotation = Quaternion.Euler(0f, 0f, inst.playerRotation);
                         }
                     }
                 }
 
-                #endregion
-
-                #region Lerp Colors
-
-                LSEffectsManager.inst.bloom.color.Override(LerpColor(prevBloomColor, nextBloomColor, bloomColor, Color.white));
-                LSEffectsManager.inst.vignette.color.Override(LerpColor(prevVignetteColor, nextVignetteColor, vignetteColor, Color.black));
-
-                var beatmapTheme = RTHelpers.BeatmapTheme;
-                EventsCorePlugin.bgColorToLerp = LerpColor(prevBGColor, nextBGColor, bgColor, beatmapTheme.backgroundColor);
-                EventsCorePlugin.timelineColorToLerp = LerpColor(prevTimelineColor, nextTimelineColor, timelineColor, beatmapTheme.guiColor);
-                dangerColorResult = LerpColor(prevTimelineColor, prevDangerColor, nextDangerColor, defaultDangerColor);
-
-                RTEffectsManager.inst.gradient.color1.Override(LerpColor(prevGradientColor1, nextGradientColor1, gradientColor1, Color.black, new Color(0f, 0.8f, 0.56f, 0.5f)));
-                RTEffectsManager.inst.gradient.color2.Override(LerpColor(prevGradientColor2, nextGradientColor2, gradientColor2, Color.black, new Color(0.81f, 0.37f, 1f, 0.5f)));
+                RTPlayer.PlayerForce = new Vector2(inst.playerForceX, inst.playerForceY) * playerForceMultiplier;
 
                 #endregion
             }
@@ -617,12 +635,23 @@ namespace EventsCore
             EventManager.inst.prevCamZoom = EventManager.inst.camZoom;
         }
 
+        public static float playerForceMultiplier = 0.036f;
+
         void FixedUpdate()
         {
             if (delayTracker.leader == null && InputDataManager.inst.players.Count > 0 && GameManager.inst.players.transform.Find("Player 1/Player"))
             {
                 delayTracker.leader = GameManager.inst.players.transform.Find("Player 1/Player");
             }
+        }
+
+        public static Color ChangeColorHSV(Color color, float hue, float sat, float val)
+        {
+            double num;
+            double saturation;
+            double value;
+            LSColors.ColorToHSV(color, out num, out saturation, out value);
+            return LSColors.ColorFromHSV(num + hue, saturation + sat, value + val);
         }
 
         #region Lerp Colors
@@ -719,7 +748,7 @@ namespace EventsCore
                 next2 = (int)finalKF.eventValues[valueIndex2];
         }
 
-        Color LerpColor(int prev, int next, float t, Color defaultColor)
+        static Color LerpColor(int prev, int next, float t, Color defaultColor)
         {
             Color prevColor = RTHelpers.BeatmapTheme.effectColors.Count > prev && prev > -1 ? RTHelpers.BeatmapTheme.effectColors[prev] : defaultColor;
             Color nextColor = RTHelpers.BeatmapTheme.effectColors.Count > next && next > -1 ? RTHelpers.BeatmapTheme.effectColors[next] : defaultColor;
@@ -730,7 +759,7 @@ namespace EventsCore
             return Color.Lerp(prevColor, nextColor, t);
         }
         
-        Color LerpColor(int prev, int next, float t, Color defaultColor, Color defaultColor2)
+        static Color LerpColor(int prev, int next, float t, Color defaultColor, Color defaultColor2)
         {
             Color prevColor = RTHelpers.BeatmapTheme.effectColors.Count > prev && prev > -1 ? RTHelpers.BeatmapTheme.effectColors[prev] : prev == 19 ? defaultColor : defaultColor2;
             Color nextColor = RTHelpers.BeatmapTheme.effectColors.Count > next && next > -1 ? RTHelpers.BeatmapTheme.effectColors[next] : prev == 19 ? defaultColor : defaultColor2;
@@ -739,22 +768,6 @@ namespace EventsCore
                 t = 0f;
 
             return Color.Lerp(prevColor, nextColor, t);
-        }
-
-        public void LerpGradientColor1()
-        {
-            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor1 && prevGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor1] : prevGradientColor1 == 19 ? Color.black : new Color(0f, 0.8f, 0.56f, 0.5f);
-            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor1 && nextGradientColor1 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor1] : nextGradientColor1 == 19 ? Color.black : new Color(0f, 0.8f, 0.56f, 0.5f);
-
-            RTEffectsManager.inst.gradient.color1.Override(Color.Lerp(previous, next, gradientColor1));
-        }
-
-        public void LerpGradientColor2()
-        {
-            Color previous = RTHelpers.BeatmapTheme.effectColors.Count > prevGradientColor2 && prevGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[prevGradientColor2] : prevGradientColor2 == 19 ? Color.black : new Color(0.81f, 0.37f, 1f, 0.5f);
-            Color next = RTHelpers.BeatmapTheme.effectColors.Count > nextGradientColor2 && nextGradientColor2 > -1 ? RTHelpers.BeatmapTheme.effectColors[nextGradientColor2] : nextGradientColor2 == 19 ? Color.black : new Color(0.81f, 0.37f, 1f, 0.5f);
-
-            RTEffectsManager.inst.gradient.color2.Override(Color.Lerp(previous, next, gradientColor2));
         }
 
         public Color dangerColorResult;
@@ -907,6 +920,15 @@ namespace EventsCore
         // 6 - 4
         public static void updateCameraBloomColor(float x) => inst.bloomColor = x;
 
+        // 6 - 5
+        public static void updateCameraBloomHue(float x) => inst.bloomHue = x;
+
+        // 6 - 6
+        public static void updateCameraBloomSat(float x) => inst.bloomSat = x;
+
+        // 6 - 7
+        public static void updateCameraBloomVal(float x) => inst.bloomVal = x;
+
         #endregion
 
         #region Vignette - 7
@@ -931,6 +953,15 @@ namespace EventsCore
 
         // 7 - 6
         public static void updateCameraVignetteColor(float x) => inst.vignetteColor = x;
+
+        // 7 - 7
+        public static void updateCameraVignetteHue(float x) => inst.vignetteHue = x;
+
+        // 7 - 8
+        public static void updateCameraVignetteSat(float x) => inst.vignetteSat = x;
+
+        // 7 - 9
+        public static void updateCameraVignetteVal(float x) => inst.vignetteVal = x;
 
         #endregion
 
@@ -1063,6 +1094,30 @@ namespace EventsCore
         // 15 - 4
         public static void updateCameraGradientMode(float x) => RTEffectsManager.inst.gradient.blendMode.Override((SCPE.Gradient.BlendMode)(int)x);
 
+        // 15 - 5
+        public static void updateCameraGradientColor1Opacity(float x) => inst.gradientColor1Opacity = x;
+
+        // 15 - 6
+        public static void updateCameraGradientColor1Hue(float x) => inst.gradientColor1Hue = x;
+
+        // 15 - 7
+        public static void updateCameraGradientColor1Sat(float x) => inst.gradientColor1Sat = x;
+
+        // 15 - 8
+        public static void updateCameraGradientColor1Val(float x) => inst.gradientColor1Val = x;
+
+        // 15 - 5
+        public static void updateCameraGradientColor2Opacity(float x) => inst.gradientColor2Opacity = x;
+
+        // 15 - 6
+        public static void updateCameraGradientColor2Hue(float x) => inst.gradientColor2Hue = x;
+
+        // 15 - 7
+        public static void updateCameraGradientColor2Sat(float x) => inst.gradientColor2Sat = x;
+
+        // 15 - 8
+        public static void updateCameraGradientColor2Val(float x) => inst.gradientColor2Val = x;
+
         #endregion
 
         #region DoubleVision - 16
@@ -1119,6 +1174,15 @@ namespace EventsCore
 
         public float bgActive = 0f;
 
+        // 20 - 2
+        public static void updateCameraBGHue(float x) => inst.bgHue = x;
+
+        // 20 - 3
+        public static void updateCameraBGSat(float x) => inst.bgSat = x;
+
+        // 20 - 4
+        public static void updateCameraBGVal(float x) => inst.bgVal = x;
+
         #endregion
 
         #region Invert - 21
@@ -1170,6 +1234,18 @@ namespace EventsCore
 
         // 22 - 6
         public static void updateTimelineColor(float x) => inst.timelineColor = x;
+
+        // 22 - 7
+        public static void updateTimelineOpacity(float x) => inst.timelineOpacity = x;
+
+        // 22 - 8
+        public static void updateTimelineHue(float x) => inst.timelineHue = x;
+
+        // 22 - 9
+        public static void updateTimelineSat(float x) => inst.timelineSat = x;
+
+        // 22 - 10
+        public static void updateTimelineVal(float x) => inst.timelineVal = x;
 
         #endregion
 
@@ -1348,6 +1424,18 @@ namespace EventsCore
         // 30 - 2
         public static void updateDangerColor(float x) => inst.dangerColor = x;
 
+        // 30 - 3
+        public static void updateCameraDangerOpacity(float x) => inst.dangerOpacity = x;
+
+        // 30 - 4
+        public static void updateCameraDangerHue(float x) => inst.dangerHue = x;
+
+        // 30 - 5
+        public static void updateCameraDangerSat(float x) => inst.dangerSat = x;
+
+        // 30 - 6
+        public static void updateCameraDangerVal(float x) => inst.dangerVal = x;
+
         #endregion
 
         #region 3D Rotation - 31
@@ -1395,9 +1483,63 @@ namespace EventsCore
 
         #endregion
 
+        #region Player Force - 36
+
+        // 36 - 0
+        public static void updatePlayerForceX(float x) => inst.playerForceX = x;
+
+        // 36 - 1
+        public static void updatePlayerForceY(float x) => inst.playerForceY = x;
+
+        #endregion
+
+        #region Mosaic - 37
+
+        // 37 - 0
+        public static void updateCameraMosaic(float x) => inst.mosaicIntensity = x;
+
+        #endregion
+
         #endregion
 
         #region Variables
+
+        public float timelineVal;
+        public float timelineSat;
+        public float timelineHue;
+        public float timelineOpacity = 1f;
+
+        public float dangerVal;
+        public float dangerSat;
+        public float dangerHue;
+        public float dangerOpacity = 1f;
+
+        public float bgVal;
+        public float bgSat;
+        public float bgHue;
+
+        public float gradientColor2Val;
+        public float gradientColor2Sat;
+        public float gradientColor2Hue;
+        public float gradientColor2Opacity = 1f;
+
+        public float gradientColor1Val;
+        public float gradientColor1Sat;
+        public float gradientColor1Hue;
+        public float gradientColor1Opacity = 1f;
+
+        public float vignetteVal;
+        public float vignetteSat;
+        public float vignetteHue;
+
+        public float bloomVal;
+        public float bloomSat;
+        public float bloomHue;
+
+        public float playerForceX = 0f;
+        public float playerForceY = 0f;
+
+        public float mosaicIntensity = 0f;
 
         bool setWindow = false;
 
@@ -1541,15 +1683,15 @@ namespace EventsCore
                 {
                     0f, // Move X
                     0f, // Move Y
-                },
+                }, // Move - 0
                 new List<float>
                 {
                     0f, // Zoom
-                },
+                }, // Zoom - 1
                 new List<float>
                 {
                     0f, // Rotate
-                },
+                }, // Rotate - 2
                 new List<float>
                 {
                     0f, // Shake
@@ -1557,15 +1699,15 @@ namespace EventsCore
                     0f, // Shake Y
                     0f, // Shake Interpolation
                     0f, // Shake Speed
-                },
+                }, // Shake - 3
                 new List<float>
                 {
                     0f, // Theme
-                },
+                }, // Theme - 4
                 new List<float>
                 {
                     0f, // Chromatic
-                },
+                }, // Chromatic - 5
                 new List<float>
                 {
                     0f, // Bloom Intensity
@@ -1573,7 +1715,10 @@ namespace EventsCore
                     0f, // Bloom Threshold
                     0f, // Bloom Anamorphic Ratio
                     0f, // Bloom Color
-                },
+                    0f, // Bloom Hue
+                    0f, // Bloom Sat
+                    0f, // Bloom Val
+                }, // Bloom - 6
                 new List<float>
                 {
                     0f, // Vignette Intensity
@@ -1583,7 +1728,10 @@ namespace EventsCore
                     0f, // Vignette Center X
                     0f, // Vignette Center Y
                     0f, // Vignette Color
-                },
+                    0f, // Vignette Hue
+                    0f, // Vignette Sat
+                    0f, // Vignette Val
+                }, // Vignette - 7
                 new List<float>
                 {
                     0f, // Lens Intensity
@@ -1592,13 +1740,13 @@ namespace EventsCore
                     0f, // Lens Intensity X
                     0f, // Lens Intensity Y
                     0f, // Lens Scale
-                },
+                }, // Lens - 8
                 new List<float>
                 {
                     0f, // Grain Intensity
                     0f, // Grain Colored
                     0f, // Grain Size
-                },
+                }, // Grain - 9
                 new List<float>
                 {
                     0f, // ColorGrading Hueshift
@@ -1610,7 +1758,7 @@ namespace EventsCore
                     0f, // ColorGrading Saturation
                     0f, // ColorGrading Temperature
                     0f, // ColorGrading Tint
-                },
+                }, // ColorGrading - 10
                 new List<float>
                 {
                     0f, // Ripples Strength
@@ -1618,21 +1766,21 @@ namespace EventsCore
                     0f, // Ripples Distance
                     0f, // Ripples Height
                     0f, // Ripples Width
-                },
+                }, // Ripples - 11
                 new List<float>
                 {
                     0f, // RadialBlur Intensity
                     0f, // RadialBlur Iterations
-                },
+                }, // RadialBlur - 12
                 new List<float>
                 {
                     0f, // ColorSplit Offset
-                },
+                }, // ColorSplit - 13
                 new List<float>
                 {
                     0f, // Camera Offset X
                     0f, // Camera Offset Y
-                },
+                }, // Offset - 14
                 new List<float>
                 {
                     0f, // Gradient Intensity
@@ -1640,35 +1788,46 @@ namespace EventsCore
                     0f, // Gradient Color Top
                     0f, // Gradient Color Bottom
                     0f, // Gradient Mode
-                },
+                    0f, // Gradient Color Top Opacity
+                    0f, // Gradient Color Top Hue
+                    0f, // Gradient Color Top Sat
+                    0f, // Gradient Color Top Val
+                    0f, // Gradient Color Bottom Opacity
+                    0f, // Gradient Color Bottom Hue
+                    0f, // Gradient Color Bottom Sat
+                    0f, // Gradient Color Bottom Val
+                }, // Gradient - 15
                 new List<float>
                 {
                     0f, // DoubleVision Intensity
-                },
+                }, // DoubleVision
                 new List<float>
                 {
                     0f, // ScanLines Intensity
                     0f, // ScanLines Amount
                     0f, // ScanLines Speed
-                },
+                }, // ScanLines
                 new List<float>
                 {
                     0f, // Blur Amount
                     0f, // Blur Iterations
-                },
+                }, // Blur
                 new List<float>
                 {
                     0f, // Pixelize Amount
-                },
+                }, // Pixelize
                 new List<float>
                 {
                     0f, // BG Color
                     0f, // BG Active
-                },
+                    0f, // BG Hue
+                    0f, // BG Sat
+                    0f, // BG Val
+                }, // BG
                 new List<float>
                 {
                     0f, // Invert Amount
-                },
+                }, // Invert
                 new List<float>
                 {
                     0f, // Timeline Active
@@ -1678,7 +1837,11 @@ namespace EventsCore
                     0f, // Timeline Sca Y
                     0f, // Timeline Rot
                     0f, // Timeline Color
-                },
+                    0f, // Timeline Opacity
+                    0f, // Timeline Hue
+                    0f, // Timeline Sat
+                    0f, // Timeline Val
+                }, // Timeline
                 new List<float>
                 {
                     0f, // Player Active
@@ -1744,7 +1907,11 @@ namespace EventsCore
                     0f, // Danger Intensity
                     0f, // Danger Size
                     0f, // Danger Color
-                },
+                    0f, // Danger Opacity
+                    0f, // Danger Hue
+                    0f, // Danger Sat
+                    0f, // Danger Val
+                }, // Danger
                 new List<float>
                 {
                     0f, // Rotation X
@@ -1770,6 +1937,11 @@ namespace EventsCore
                 {
                     0f, // Window Position Y
                 },
+                new List<float>
+                {
+                    0f, // Player Force X
+                    0f, // Player Force Y
+                },
             };
         }
 
@@ -1781,7 +1953,7 @@ namespace EventsCore
 
         public delegate void KFDelegate(float t);
 
-        public KFDelegate[][] events = new KFDelegate[36][]
+        public KFDelegate[][] events = new KFDelegate[38][]
         {
             new KFDelegate[]
             {
@@ -1818,7 +1990,10 @@ namespace EventsCore
                 updateCameraBloomDiffusion,
                 updateCameraBloomThreshold,
                 updateCameraBloomAnamorphicRatio,
-                updateCameraBloomColor
+                updateCameraBloomColor,
+                updateCameraBloomHue,
+                updateCameraBloomSat,
+                updateCameraBloomVal,
             }, // Bloom
             new KFDelegate[]
             {
@@ -1828,7 +2003,10 @@ namespace EventsCore
                 updateCameraVignetteRoundness,
                 updateCameraVignetteCenterX,
                 updateCameraVignetteCenterY,
-                updateCameraVignetteColor
+                updateCameraVignetteColor,
+                updateCameraVignetteHue,
+                updateCameraVignetteSat,
+                updateCameraVignetteVal,
             }, // Vignette
             new KFDelegate[]
             {
@@ -1885,7 +2063,15 @@ namespace EventsCore
                 updateCameraGradientRotation,
                 updateCameraGradientColor1,
                 updateCameraGradientColor2,
-                updateCameraGradientMode
+                updateCameraGradientMode,
+                updateCameraGradientColor1Opacity,
+                updateCameraGradientColor1Hue,
+                updateCameraGradientColor1Sat,
+                updateCameraGradientColor1Val,
+                updateCameraGradientColor2Opacity,
+                updateCameraGradientColor2Hue,
+                updateCameraGradientColor2Sat,
+                updateCameraGradientColor2Val,
             }, // Gradient
             new KFDelegate[]
             {
@@ -1909,7 +2095,10 @@ namespace EventsCore
             new KFDelegate[]
             {
                 updateCameraBGColor,
-                updateCameraBGActive
+                updateCameraBGActive,
+                updateCameraBGHue,
+                updateCameraBGSat,
+                updateCameraBGVal,
             }, // BG
             new KFDelegate[]
             {
@@ -1923,7 +2112,11 @@ namespace EventsCore
                 updateTimelineScaX,
                 updateTimelineScaY,
                 updateTimelineRot,
-                updateTimelineColor
+                updateTimelineColor,
+                updateTimelineOpacity,
+                updateTimelineHue,
+                updateTimelineSat,
+                updateTimelineVal,
             }, // Timeline
             new KFDelegate[]
             {
@@ -1990,7 +2183,11 @@ namespace EventsCore
             {
                 updateDangerIntensity,
                 updateDangerSize,
-                updateDangerColor
+                updateDangerColor,
+                updateCameraDangerOpacity,
+                updateCameraDangerHue,
+                updateCameraDangerSat,
+                updateCameraDangerVal,
             }, // Danger
             new KFDelegate[]
             {
@@ -2008,15 +2205,24 @@ namespace EventsCore
                 updateWindowResolutionX,
                 updateWindowResolutionY,
                 updateWindowAllowPositioning
-            },
+            }, // Window Base
             new KFDelegate[]
             {
                 updateWindowPositionX
-            },
+            }, // Window Position X
             new KFDelegate[]
             {
                 updateWindowPositionY
-            },
+            }, // Window Position Y
+            new KFDelegate[]
+            {
+                updatePlayerForceX,
+                updatePlayerForceY
+            }, // Player Force
+            new KFDelegate[]
+            {
+                updateCameraMosaic
+            }, // Mosaic
         };
 
         public float shakeSpeed = 1f;
