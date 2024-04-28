@@ -23,10 +23,11 @@ using RTFunctions.Functions;
 using RTFunctions.Functions.Data.Player;
 using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
+using RTFunctions.Functions.Optimization;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.6.6")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.6.7")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
@@ -126,6 +127,17 @@ namespace EventsCore
 
 			harmony.PatchAll(typeof(EventsCorePlugin));
 			harmony.PatchAll(typeof(EventsInstance));
+
+            try
+            {
+				RTFunctions.Patchers.ObjectManagerPatch.LevelTick -= Updater.OnLevelTick;
+				RTFunctions.Patchers.ObjectManagerPatch.LevelTick += RTEventManager.OnLevelTick;
+				RTFunctions.Patchers.ObjectManagerPatch.LevelTick += Updater.OnLevelTick;
+            }
+            catch (Exception ex)
+            {
+				Debug.LogException(ex);
+            }
 		}
 
 		void Update()
