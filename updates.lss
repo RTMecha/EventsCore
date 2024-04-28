@@ -1,3 +1,8 @@
+1.6.7 > [Apr 28, 2024]
+- Event updating now occurs before object updating due to camera parenting.
+- Added Mosaic event keyframes. Mosaic marks probably one of the last post-processing effect keyframes since most of the ones I can use in-game have already been used.
+- Added Player Force event keyframes. This is for alpha / VG level support.
+- Most event keyframes with color now have Opacity / Hue / Saturation / Value. Only BG, bloom and vignette don't have opacity. BG for obvious reasons, but bloom and vignette just don't work for whatever reason.
 1.6.6 > [Apr 27, 2024]
 - Fixed event keyframes with color flashing for a frame due to the code being in the wrong order. (Also cleaned up the code related to the color stuff)
 1.6.5 > [Apr 16, 2024]
