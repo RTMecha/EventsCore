@@ -1,3 +1,5 @@
+1.7.0 > [May 5, 2024]
+- Finally implemented the glitch effects, Analog Glitch and Digital Glitch! Ported from the upcoming BetterLegacy mod.
 1.6.7 > [Apr 28, 2024]
 - Event updating now occurs before object updating due to camera parenting.
 - Added Mosaic event keyframes. Mosaic marks probably one of the last post-processing effect keyframes since most of the ones I can use in-game have already been used.
