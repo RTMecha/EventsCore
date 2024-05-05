@@ -27,7 +27,7 @@ using RTFunctions.Functions.Optimization;
 
 namespace EventsCore
 {
-	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.6.7")]
+	[BepInPlugin("com.mecha.eventscore", "Events Core", " 1.7.0")]
 	[BepInDependency("com.mecha.rtfunctions")]
 	[BepInProcess("Project Arrhythmia.exe")]
 	public class EventsCorePlugin : BaseUnityPlugin
@@ -72,9 +72,22 @@ namespace EventsCore
 			Catalyst
         }
 
-        #endregion
+		#endregion
 
-        void Awake()
+		public static Shader analogGlitchShader;
+		public static Material analogGlitchMaterial;
+		public static Shader digitalGlitchShader;
+		public static Material digitalGlitchMaterial;
+		public static void GetKinoGlitch()
+		{
+			var assetBundle = AssetBundle.LoadFromFile($"{RTFile.ApplicationDirectory}{RTFunctions.FunctionsPlugin.BepInExAssetsPath}effects.asset"); // Get AssetBundle from assets folder.
+			analogGlitchMaterial = assetBundle.LoadAsset<Material>("analogglitchmaterial.mat"); // Load asset
+			digitalGlitchMaterial = assetBundle.LoadAsset<Material>("digitalglitchmaterial.mat"); // Load asset
+			analogGlitchShader = assetBundle.LoadAsset<Shader>("analogglitch.shader"); // Load asset
+			digitalGlitchShader = assetBundle.LoadAsset<Shader>("digitalglitch.shader"); // Load asset
+		}
+
+		void Awake()
 		{
 			inst = this;
 
@@ -138,6 +151,15 @@ namespace EventsCore
             {
 				Debug.LogException(ex);
             }
+
+            try
+			{
+				GetKinoGlitch();
+			}
+            catch (Exception ex)
+			{
+				Debug.LogException(ex);
+			}
 		}
 
 		void Update()
